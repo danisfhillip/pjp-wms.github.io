@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Cek Stok</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif!important;background:#f5f6f8;color:#222;overflow-x:hidden}
+    .container{max-width:1400px;margin:0 auto;padding:28px 30px 40px}
+    .page-header{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:24px}
+    .page-title h1{font-size:24px;margin:0 0 5px}
+    .page-title p{font-size:13px;color:#888;margin:0}
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+    .summary-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+    .summary-label{font-size:12px;color:#888;margin-bottom:8px}
+    .summary-value{font-size:23px;font-weight:bold}
+    .summary-sub{font-size:11px;color:#aaa;margin-top:5px}
+    .summary-percent{font-size:11px;font-weight:bold;color:#258025;margin-top:5px}
+    .stock-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.04);overflow:visible}
+
+    .toolbar{display:flex;align-items:center;gap:10px;padding:16px}
+    .search-wrap{position:relative;width:55%;max-width:650px}
+    .search-wrap input{width:100%;padding:11px 14px 11px 38px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;outline:none}
+    .search-wrap input:focus{border-color:#AD2020}
+    .search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#999;display:flex;align-items:center}
+    .search-icon svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+    .filter-dropdown{position:relative}
+    .filter-btn{width:auto;min-width:95px;padding:10px 13px;background:#fff;color:#555;border:1px solid #ddd;border-radius:8px;font-size:12px;font-weight:normal;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+    .filter-btn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+    .filter-btn:hover{background:#f8f9fa}
+    .filter-count{display:none;background:#e8def8;color:#6f42c1;padding:2px 6px;border-radius:5px;font-size:10px}
+    .filter-count.show{display:inline-block}
+    .filter-menu{display:none;position:absolute;top:45px;right:0;width:280px;background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px;box-shadow:0 7px 22px rgba(0,0,0,.14);z-index:9999}
+    .filter-menu.show{display:block}
+    .filter-section{margin-bottom:5px}
+    .filter-section-header{display:flex;align-items:center;justify-content:space-between;padding:7px 5px;cursor:pointer;font-size:12px;font-weight:bold;color:#555;border-radius:5px}
+    .filter-section-header:hover{background:#f5f5f5}
+    .filter-section-title{display:flex;align-items:center;gap:5px}
+    .filter-section-count{display:none;background:#e8def8;color:#6f42c1;padding:2px 5px;border-radius:4px;font-size:9px}
+    .filter-section-count.show{display:inline-block}
+    .filter-section-arrow{font-size:11px;color:#888;transition:.15s}
+    .filter-section.collapsed .filter-section-arrow{transform:rotate(-90deg)}
+    .filter-section-content{padding:2px 5px 6px}
+    .filter-section.collapsed .filter-section-content{display:none}
+    .filter-options{display:flex;flex-direction:column;gap:1px}
+    .filter-option{display:flex!important;align-items:center;gap:7px;padding:3px 4px!important;border-radius:5px;cursor:pointer}
+    .filter-option:hover{background:#f5f5f5}
+    .filter-option input{display:block!important;width:14px;height:14px;margin:0;accent-color:#AD2020}
+    .filter-option .badge{font-size:11px}
+    .filter-menu-footer{border-top:1px solid #eee;margin:8px -12px -12px;padding:10px 12px;display:flex;justify-content:flex-end;gap:7px}
+    .filter-reset{width:auto;padding:8px 12px;background:#f1f3f5;color:#555;border:1px solid #ddd;border-radius:7px;font-size:12px;font-weight:normal;cursor:pointer}
+    .filter-apply{width:auto;padding:8px 14px;background:#AD2020;color:#fff;border:0;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer}
+    .toolbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+
+    .column-dropdown{position:relative}
+    .column-btn{width:auto;min-width:95px;padding:10px 13px;background:#fff;color:#555;border:1px solid #ddd;border-radius:8px;font-size:12px;font-weight:normal;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+    .column-btn:hover{background:#f8f9fa}
+    .column-menu{display:none;position:absolute;top:45px;right:0;width:260px;max-height:420px;overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px;box-shadow:0 7px 22px rgba(0,0,0,.14);z-index:9999}
+    .column-menu.show{display:block}
+    .column-menu-title{font-size:12px;font-weight:bold;margin-bottom:10px;color:#333}
+    .column-option{display:flex;align-items:center;gap:8px;padding:7px 5px;border-radius:5px;font-size:12px;color:#555;cursor:pointer}
+    .column-option:hover{background:#f5f5f5}
+    .column-option input{width:14px;height:14px;margin:0;accent-color:#AD2020}
+    .column-option input:disabled{opacity:.5}
+    .column-menu-footer{display:flex;justify-content:space-between;gap:7px;border-top:1px solid #eee;margin:8px -12px -12px;padding:10px 12px}
+    .column-reset,.column-close{width:auto;padding:8px 11px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer}
+    .column-reset{background:#f1f3f5;color:#555}
+    .column-close{background:#AD2020;color:#fff;border-color:#AD2020}
+    @media(max-width:600px){
+      .column-menu{position:fixed;left:14px;right:14px;top: auto;width:auto;max-height:70vh}
+    }
+
+    .reset-btn{width:auto;min-width:65px;padding:10px 13px;background:#f1f3f5;color:#555;border:1px solid #ddd;border-radius:8px;font-size:12px;font-weight:normal;cursor:pointer}
+
+    .result-info{padding:0}
+    .result-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #eee}
+    .result-title{font-size:13px;font-weight:bold;color:#222}
+    .view-mode{display:flex;align-items:center;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;padding:2px;gap:2px}
+    .view-mode-btn{display:flex;align-items:center;gap:5px;width:auto;border:0;background:transparent;color:#777;border-radius:6px;padding:7px 11px;font-size:11px;font-weight:bold;cursor:pointer}
+    .view-mode-btn svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .view-mode-btn:hover{background:#e9ecef}
+    .view-mode-btn.active{background:#AD2020;color:#fff}
+    .result-filter{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 14px}
+
+    .filter-group{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+    .filter-plus{font-size:14px;font-weight:bold;color:#aaa}
+    .badge{display:inline-block;padding:5px 9px;border-radius:6px;font-size:11px;white-space:nowrap}
+    .badge-a,.badge-fastmoving{background:#d9ead3;color:#38761d}
+    .badge-a1,.badge-slowmoving{background:#ffe599;color:#7f6000}
+    .badge-b,.badge-returan{background:#f9cb9c;color:#783f04}
+    .badge-bs,.badge-deadstock{background:#f4cccc;color:#660000}
+    .filter-grey{background:#e9ecef;color:#495057}
+    .table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:12px 14px;border-bottom:1px solid #eee;text-align:left;white-space:nowrap}
+    th{background:#f8f9fa;font-weight:bold;color:#555}
+    tr:last-child td{border-bottom:0}
+    tr:hover{background:#fafafa}
+
+    .sortable{cursor:pointer;user-select:none}
+    .sortable:hover{background:#eef0f2}
+    .sort-icon{display:inline-flex;align-items:center;justify-content:center;width:12px;height:14px;margin-left:4px;vertical-align:middle;color:#aaa;pointer-events:none}
+    .sort-icon svg{width:12px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .sort-icon .sort-up,.sort-icon .sort-down{transition:.15s}
+    .sort-icon.active{color:#AD2020}
+    .sort-icon.active.asc .sort-down{opacity:.25}
+    .sort-icon.active.desc .sort-up{opacity:.25}
+    .number-cell{text-align:right!important;white-space:nowrap}
+
+    .group-row{cursor:pointer}
+    .group-row:hover{background:#f8f8f8}
+    .group-detail-row{display:none;background:#fafafa}
+    .group-detail-row.show{display:table-row}
+    .group-detail{padding:10px 25px 10px 45px!important}
+    .group-detail table{font-size:12px;background:#fff;border:1px solid #e5e5e5;border-radius:7px;overflow:hidden}
+    .group-detail th{background:#f3f3f3}
+    .expand-icon{font-size:11px;color:#AD2020;font-weight:bold}
+    .empty{text-align:center;color:#888;padding:30px}
+    .loading{text-align:center;color:#888;padding:30px}
+
+    .pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 14px;border-top:1px solid #eee}
+    .page-info{font-size:12px;color:#777}
+    .page-buttons{display:flex;align-items:center;gap:8px}
+    .page-size{width:100px;padding:8px 10px;border:1px solid #ddd;border-radius:7px;background:#fff;font-size:12px}
+    .page-btn{width:auto;min-width:34px;margin:0;padding:7px 10px;background:#fff;border:1px solid #ddd;color:#333;font-size:12px;border-radius:7px;cursor:pointer}
+    .page-btn.active{background:#AD2020;color:#fff;border-color:#AD2020}
+    .page-btn:disabled{opacity:.4;cursor:not-allowed}
+    .page-btn:hover:not(:disabled){background:#f5f5f5}
+    .page-btn.active:hover{background:#AD2020}
+
+    #tableHead th.column-settings-cell{width:36px;min-width:36px;padding:8px 6px;text-align:center;background:#f8f9fa}
+    .column-settings-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #ddd;border-radius:5px;background:#fff;color:#666;cursor:pointer;font-size:15px;font-weight:400}
+    .column-settings-btn:hover{background:#eee;color:#333}
+    .column-menu-title{font-size:12px;font-weight:600;color:#444;margin-bottom:8px}
+    .column-option{display:flex;align-items:center;gap:8px;padding:7px 4px;font-size:12px;font-weight:400;color:#555;cursor:pointer}
+    .column-option span{font-weight:400}
+    .column-close,.column-reset{font-size:11px;font-weight:500}
+
+    @media(max-width:900px){
+      .container{padding:18px 14px}
+      .summary{grid-template-columns:repeat(2,1fr)}
+      .search-wrap{width:auto;max-width:none;flex:1}
+    }
+
+    @media(max-width:600px){
+      .page-header{align-items:flex-start;flex-direction:column}
+      .view-mode{width:100%}
+      .view-mode-btn{flex:1;padding:6px 8px;font-size:10px}
+      .summary{grid-template-columns:1fr 1fr}
+      .toolbar{flex-wrap:wrap;padding:12px}
+      .search-wrap{width:100%;flex:none}
+      .filter-btn{flex:1}
+      .reset-btn{flex:1}
+      .filter-menu{position:fixed;left:14px;right:14px;width:auto;max-height:70vh;overflow-y:auto;top:auto;z-index:99999;}
+      .result-info{align-items:flex-start;flex-direction:column}
+      .result-header{padding:10px 12px}
+      .pagination{align-items:stretch;flex-direction:column}
+      .page-buttons{justify-content:center;flex-wrap:wrap}
+    }
+  </style>
+</head>
+
+<body>
+<script>window.headerTitle='Cek Stok';</script>
+<?!= include('header'); ?>
+
+<div id="stockPage">
+  <div class="container">
+
+    <div class="page-header">
+      <div class="page-title">
+        <h1>📦 Cek Stok</h1>
+        <p>Lihat dan kelola seluruh stok kain yang tersedia di gudang.</p>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-card">
+        <div class="summary-label">TOTAL ROLL</div>
+        <div class="summary-value" id="totalRoll">0 Roll</div>
+        <div class="summary-percent" id="totalRollPercent">0% dari total gudang</div>
+        <div class="summary-sub">Roll yang sesuai filter</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">TOTAL PANJANG</div>
+        <div class="summary-value" id="totalLength">0</div>
+        <div class="summary-percent" id="totalLengthPercent">0% dari total gudang</div>
+        <div class="summary-sub">Total panjang stok</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">TOTAL PRODUK</div>
+        <div class="summary-value" id="totalProduct">0</div>
+        <div class="summary-percent" id="totalProductPercent">0% dari total gudang</div>
+        <div class="summary-sub">Varian produk</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">KATEGORI</div>
+        <div class="summary-value" id="totalCategory">0</div>
+        <div class="summary-percent" id="totalCategoryPercent">0% dari total gudang</div>
+        <div class="summary-sub">Kategori produk</div>
+      </div>
+    </div>
+
+    <div class="stock-card">
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m20 20-4-4"></path>
+            </svg>
+          </span>
+          <input id="searchInput" type="text" placeholder="Cari SKU, produk, warna, kode desain...">
+        </div>
+
+        <div class="toolbar-actions">
+
+          <!-- <div class="column-dropdown">
+            <button type="button" class="column-btn" onclick="toggleColumnMenu()">
+              ☷ Kolom
+            </button>
+            <div class="column-menu" id="columnMenu">
+              <div class="column-menu-title">Tampilkan Kolom</div>
+              <div id="columnOptions"></div>
+              <div class="column-menu-footer">
+                <button type="button" class="column-reset" onclick="resetColumns()">Reset</button>
+                <button type="button" class="column-close" onclick="toggleColumnMenu()">Selesai</button>
+              </div>
+            </div>
+          </div> -->
+
+          <div class="filter-dropdown">
+            <button type="button" class="filter-btn" onclick="toggleFilterMenu()">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 6h16M7 12h10M10 18h4"></path>
+              </svg>
+              Filter
+              <span class="filter-count" id="filterCount"></span>
+            </button>
+
+            <div class="filter-menu" id="filterMenu">
+
+              <div class="filter-section" id="gradeFilterSection">
+                <div class="filter-section-header" onclick="toggleFilterSection('gradeFilterSection')">
+                  <div class="filter-section-title">
+                    <span>Grade</span>
+                    <span id="gradeSectionCount" class="filter-section-count"></span>
+                  </div>
+                  <span class="filter-section-arrow">⌄</span>
+                </div>
+
+                <div class="filter-section-content">
+                  <div class="filter-options">
+                    <label class="filter-option"><input type="checkbox" value="A" data-filter="grade" onchange="updatePopupFilterCount()"><span class="badge badge-a">A</span></label>
+                    <label class="filter-option"><input type="checkbox" value="A1" data-filter="grade" onchange="updatePopupFilterCount()"><span class="badge badge-a1">A1</span></label>
+                    <label class="filter-option"><input type="checkbox" value="B" data-filter="grade" onchange="updatePopupFilterCount()"><span class="badge badge-b">B</span></label>
+                    <label class="filter-option"><input type="checkbox" value="BS" data-filter="grade" onchange="updatePopupFilterCount()"><span class="badge badge-bs">BS</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="filter-section collapsed" id="statusFilterSection">
+                <div class="filter-section-header" onclick="toggleFilterSection('statusFilterSection')">
+                  <div class="filter-section-title">
+                    <span>Status</span>
+                    <span id="statusSectionCount" class="filter-section-count"></span>
+                  </div>
+                  <span class="filter-section-arrow">⌄</span>
+                </div>
+
+                <div class="filter-section-content">
+                  <div class="filter-options">
+                    <label class="filter-option"><input type="checkbox" value="fastmoving" data-filter="status" onchange="updatePopupFilterCount()"><span class="badge badge-fastmoving">Fast Moving</span></label>
+                    <label class="filter-option"><input type="checkbox" value="slowmoving" data-filter="status" onchange="updatePopupFilterCount()"><span class="badge badge-slowmoving">Slow Moving</span></label>
+                    <label class="filter-option"><input type="checkbox" value="returan" data-filter="status" onchange="updatePopupFilterCount()"><span class="badge badge-returan">Returan</span></label>
+                    <label class="filter-option"><input type="checkbox" value="deadstock" data-filter="status" onchange="updatePopupFilterCount()"><span class="badge badge-deadstock">Deadstock</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="filter-section collapsed" id="rackFilterSection">
+                <div class="filter-section-header" onclick="toggleFilterSection('rackFilterSection')">
+                  <div class="filter-section-title">
+                    <span>Rack</span>
+                    <span id="rackSectionCount" class="filter-section-count"></span>
+                  </div>
+                  <span class="filter-section-arrow">⌄</span>
+                </div>
+
+                <div class="filter-section-content">
+                  <div class="filter-options">
+                    <label class="filter-option"><input type="checkbox" value="Rack A" data-filter="rack" onchange="updatePopupFilterCount()"><span class="badge filter-grey">Rack A</span></label>
+                    <label class="filter-option"><input type="checkbox" value="Rack B" data-filter="rack" onchange="updatePopupFilterCount()"><span class="badge filter-grey">Rack B</span></label>
+                    <label class="filter-option"><input type="checkbox" value="Rack C" data-filter="rack" onchange="updatePopupFilterCount()"><span class="badge filter-grey">Rack C</span></label>
+                    <label class="filter-option"><input type="checkbox" value="Rack D" data-filter="rack" onchange="updatePopupFilterCount()"><span class="badge filter-grey">Rack D</span></label>
+                    <label class="filter-option"><input type="checkbox" value="Rack E" data-filter="rack" onchange="updatePopupFilterCount()"><span class="badge filter-grey">Rack E</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="filter-menu-footer">
+                <button type="button" class="filter-reset" onclick="resetPopupFilter()">Reset</button>
+                <button type="button" class="filter-apply" onclick="applyPopupFilter()">Terapkan</button>
+              </div>
+
+            </div>
+          </div>
+
+          <button type="button" class="reset-btn" onclick="resetFilters()">Reset</button>
+        </div>
+      </div>
+
+      <div class="result-info">
+        <div class="result-header">
+          <div class="result-title" id="resultTitle">SEMUA STOK</div>
+          <div class="view-mode">
+            <button type="button" class="view-mode-btn active" id="rollViewBtn" onclick="setViewMode('roll')">
+              <svg viewBox="0 0 24 24">
+                <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                <path d="M8 9h8M8 13h8M8 17h5"></path>
+              </svg>
+              Per Roll
+            </button>
+
+            <button type="button" class="view-mode-btn" id="groupViewBtn" onclick="setViewMode('group')">
+              <svg viewBox="0 0 24 24">
+                <rect x="4" y="4" width="7" height="7"></rect>
+                <rect x="13" y="4" width="7" height="7"></rect>
+                <rect x="4" y="13" width="7" height="7"></rect>
+                <rect x="13" y="13" width="7" height="7"></rect>
+              </svg>
+              Grouping
+            </button>
+          </div>
+        </div>
+        <div class="result-filter" id="resultFilter"></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead id="tableHead"></thead>
+          <tbody id="resultList">
+            <tr><td class="loading">Memuat stok...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <div class="page-info" id="pageInfo">Memuat...</div>
+
+        <div class="page-buttons">
+          <select class="page-size" id="pageSize" onchange="changePageSize()">
+            <option value="25">25 / 0</option>
+            <option value="50">50 / 0</option>
+            <option value="100">100 / 0</option>
+          </select>
+
+          <div id="pageButtons"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const selectedFilters={grade:[],status:[],rack:[]};
+let currentResults=[];
+let originalResults=[];
+let currentViewMode='roll';
+let sortColumns=[];
+let detailSort={};
+let currentPage=1;
+let pageSize=25;
+
+
+const columnDefinitions={
+  roll:[
+    {key:'rollId',label:'Roll ID',required:true},
+    {key:'category',label:'Kategori'},
+    {key:'fabricType',label:'Jenis Kain'},
+    {key:'product',label:'Produk'},
+    {key:'color',label:'Warna'},
+    {key:'length',label:'Panjang'},
+    {key:'grade',label:'Grade'},
+    {key:'status',label:'Status'},
+    {key:'location',label:'Lokasi'}
+  ],
+  group:[
+    {key:'category',label:'Kategori'},
+    {key:'fabricType',label:'Jenis Kain'},
+    {key:'product',label:'Produk'},
+    {key:'color',label:'Warna'},
+    {key:'gsm',label:'GSM'},
+    {key:'width',label:'Width'},
+    {key:'rolls',label:'Jumlah Roll'},
+    {key:'length',label:'Panjang'},
+    {key:'detail',label:'Detail',required:true}
+  ],
+  detail:[
+    {key:'rollId',label:'Roll ID',required:true},
+    {key:'length',label:'Panjang'},
+    {key:'grade',label:'Grade'},
+    {key:'status',label:'Status'},
+    {key:'location',label:'Lokasi'}
+  ]
+};
+
+let visibleColumns={
+  roll:columnDefinitions.roll.map(function(col){return col.key}),
+  group:columnDefinitions.group.map(function(col){return col.key}),
+  detail:columnDefinitions.detail.map(function(col){return col.key})
+};
+
+function loadColumnPreferences(){
+  try{
+    const saved=localStorage.getItem('padajayaStockColumns');
+    if(!saved)return;
+    const parsed=JSON.parse(saved);
+    Object.keys(visibleColumns).forEach(function(mode){
+      if(Array.isArray(parsed[mode])){
+        visibleColumns[mode]=columnDefinitions[mode]
+          .filter(function(col){
+            return col.required||parsed[mode].includes(col.key);
+          })
+          .map(function(col){return col.key});
+      }
+    });
+  }catch(error){
+    console.warn('Preferensi kolom tidak dapat dimuat:',error);
+  }
+}
+
+function saveColumnPreferences(){
+  try{
+    localStorage.setItem('padajayaStockColumns',JSON.stringify(visibleColumns));
+  }catch(error){
+    console.warn('Preferensi kolom tidak dapat disimpan:',error);
+  }
+}
+
+function toggleColumnMenu(){
+  const menu=document.getElementById('columnMenu');
+  if(!menu)return;
+  const opening=!menu.classList.contains('show');
+  const filterMenu=document.getElementById('filterMenu');
+  if(filterMenu)filterMenu.classList.remove('show');
+  menu.classList.toggle('show',opening);
+  if(opening)renderColumnOptions();
+}
+
+function renderColumnOptions(){
+  const mode=currentViewMode;
+  const options=document.getElementById('columnOptions');
+  options.innerHTML='';
+
+  columnDefinitions[mode].forEach(function(col){
+    const label=document.createElement('label');
+    label.className='column-option';
+
+    const checkbox=document.createElement('input');
+    checkbox.type='checkbox';
+    checkbox.checked=visibleColumns[mode].includes(col.key);
+    checkbox.disabled=!!col.required;
+    checkbox.addEventListener('change',function(){
+      if(checkbox.checked){
+        if(!visibleColumns[mode].includes(col.key)){
+          visibleColumns[mode].push(col.key);
+        }
+      }else{
+        visibleColumns[mode]=visibleColumns[mode].filter(function(key){
+          return key!==col.key;
+        });
+      }
+      saveColumnPreferences();
+      renderCurrentView();
+      renderColumnOptions();
+    });
+
+    const text=document.createElement('span');
+    text.textContent=col.label;
+    label.appendChild(checkbox);
+    label.appendChild(text);
+    options.appendChild(label);
+  });
+}
+
+function buildColumnSettingsHeader(){
+  return `
+    <th class="column-settings-cell">
+      <div class="column-dropdown">
+        <button type="button" class="column-settings-btn" onclick="toggleColumnMenu()" title="Atur kolom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg></button>
+        <div class="column-menu" id="columnMenu">
+          <div class="column-menu-title">Tampilkan Kolom</div>
+          <div id="columnOptions"></div>
+          <div class="column-menu-footer">
+            <button type="button" class="column-reset" onclick="resetColumns()">Reset</button>
+            <button type="button" class="column-close" onclick="toggleColumnMenu()">Selesai</button>
+          </div>
+        </div>
+      </div>
+    </th>`;
+}
+
+function resetColumns(){
+  visibleColumns[currentViewMode]=columnDefinitions[currentViewMode]
+    .map(function(col){return col.key});
+  saveColumnPreferences();
+  renderCurrentView();
+  renderColumnOptions();
+}
+
+function isColumnVisible(key){
+  return visibleColumns[currentViewMode].includes(key);
+}
+
+
+
+function applyColumnVisibility(){
+  const mode=currentViewMode;
+  const definitions=columnDefinitions[mode];
+  const head=document.getElementById('tableHead');
+  const headerRow=head.querySelector('tr');
+
+  if(headerRow){
+    definitions.forEach(function(col,index){
+      const th=headerRow.children[index];
+      if(th)th.style.display=isColumnVisible(col.key)?'':'none';
+    });
+    const settingsCell=headerRow.querySelector('.column-settings-cell');
+    if(settingsCell)settingsCell.style.display='';
+  }
+
+  if(mode==='roll'){
+    document.querySelectorAll('#resultList > tr').forEach(function(row){
+      if(row.classList.contains('group-detail-row'))return;
+      Array.from(row.children).forEach(function(td,index){
+        const col=definitions[index];
+        if(col)td.style.display=isColumnVisible(col.key)?'':'none';
+      });
+    });
+    return;
+  }
+
+  document.querySelectorAll('#resultList > tr.group-row').forEach(function(row){
+    Array.from(row.children).forEach(function(td,index){
+      const col=definitions[index];
+      if(col)td.style.display=isColumnVisible(col.key)?'':'none';
+    });
+  });
+
+  document.querySelectorAll('#resultList > tr.group-detail-row > td.group-detail').forEach(function(td){
+    td.colSpan=visibleColumns.group.length;
+  });
+
+  document.querySelectorAll('.group-detail').forEach(function(container){
+    container.querySelectorAll('thead tr').forEach(function(row){
+      Array.from(row.children).forEach(function(th,index){
+        const col=columnDefinitions.detail[index];
+        if(col)th.style.display=visibleColumns.detail.includes(col.key)?'':'none';
+      });
+    });
+    container.querySelectorAll('tbody tr').forEach(function(row){
+      Array.from(row.children).forEach(function(td,index){
+        const col=columnDefinitions.detail[index];
+        if(col)td.style.display=visibleColumns.detail.includes(col.key)?'':'none';
+      });
+    });
+  });
+}
+
+const sortOrder={
+  roll:['rollId','category','fabricType','product','color','grade','status','location'],
+  group:['category','fabricType','product','color','gsm','width','rolls']
+};
+
+function toggleFilterMenu(){
+  const menu=document.getElementById('filterMenu');
+  const button=document.querySelector('.filter-btn');
+  const opening=!menu.classList.contains('show');
+
+  if(!opening){
+    menu.classList.remove('show');
+    return;
+  }
+
+  document.querySelectorAll('.filter-section').forEach(function(section){
+    section.classList.add('collapsed');
+  });
+
+  document.getElementById('gradeFilterSection').classList.remove('collapsed');
+
+  menu.classList.add('show');
+
+  if(window.innerWidth<=600){
+    positionFilterMenu();
+  }
+}
+
+function positionFilterMenu(){
+  const menu=document.getElementById('filterMenu');
+  const button=document.querySelector('.filter-btn');
+
+  if(!menu||!button)return;
+
+  const rect=button.getBoundingClientRect();
+  const margin=14;
+  const gap=8;
+
+  menu.style.position='fixed';
+  menu.style.left=margin+'px';
+  menu.style.right=margin+'px';
+  menu.style.width='auto';
+  menu.style.top=(rect.bottom+gap)+'px';
+
+  const menuHeight=menu.offsetHeight;
+  const viewportHeight=window.innerHeight;
+
+  const spaceBelow=viewportHeight-rect.bottom-margin-gap;
+
+  if(spaceBelow<menuHeight){
+    const scrollAmount=menuHeight-spaceBelow;
+
+    window.scrollBy({
+      top:scrollAmount,
+      behavior:'smooth'
+    });
+
+    setTimeout(function(){
+      if(menu.classList.contains('show')){
+        const newRect=button.getBoundingClientRect();
+        menu.style.top=(newRect.bottom+gap)+'px';
+      }
+    },300);
+  }
+}
+
+window.addEventListener('scroll',function(){
+  const menu=document.getElementById('filterMenu');
+  const button=document.querySelector('.filter-btn');
+
+  if(
+    !menu||
+    !button||
+    !menu.classList.contains('show')||
+    window.innerWidth>600
+  )return;
+
+  const rect=button.getBoundingClientRect();
+
+  if(rect.top<0){
+    window.scrollTo({
+      top:window.scrollY+rect.top,
+      behavior:'auto'
+    });
+    return;
+  }
+
+  menu.style.top=(rect.bottom+8)+'px';
+},true);
+
+window.addEventListener('resize',function(){
+  const menu=document.getElementById('filterMenu');
+
+  if(
+    menu&&
+    menu.classList.contains('show')&&
+    window.innerWidth<=600
+  ){
+    positionFilterMenu();
+  }
+});
+
+function toggleFilterSection(id){
+  const section=document.getElementById(id);
+  const sections=document.querySelectorAll('.filter-section');
+
+  const isCollapsed=section.classList.contains('collapsed');
+
+  sections.forEach(function(item){
+    item.classList.add('collapsed');
+  });
+
+  if(isCollapsed){
+    section.classList.remove('collapsed');
+  }
+}
+
+function getPopupFilters(){
+  const filters={grade:[],status:[],rack:[]};
+
+  document.querySelectorAll('#filterMenu input[data-filter]:checked').forEach(function(input){
+    filters[input.dataset.filter].push(input.value);
+  });
+
+  return filters;
+}
+
+function updatePopupFilterCount(){
+  const filters=getPopupFilters();
+
+  const map={
+    grade:'gradeSectionCount',
+    status:'statusSectionCount',
+    rack:'rackSectionCount'
+  };
+
+  Object.keys(map).forEach(function(type){
+    const count=document.getElementById(map[type]);
+    const total=filters[type].length;
+
+    count.textContent=total;
+    count.classList.toggle('show',total>0);
+  });
+}
+
+function updateFilterCount(){
+  const filters=getPopupFilters();
+  const total=filters.grade.length+filters.status.length+filters.rack.length;
+  const count=document.getElementById('filterCount');
+
+  count.textContent=total;
+  count.classList.toggle('show',total>0);
+}
+
+function applyPopupFilter(){
+  const filters=getPopupFilters();
+
+  selectedFilters.grade=filters.grade;
+  selectedFilters.status=filters.status;
+  selectedFilters.rack=filters.rack;
+
+  updatePopupFilterCount();
+  updateFilterCount();
+
+  document.getElementById('filterMenu').classList.remove('show');
+
+  searchStock();
+}
+
+function resetPopupFilter(){
+  document.querySelectorAll('#filterMenu input').forEach(function(input){
+    input.checked=false;
+  });
+
+  selectedFilters.grade=[];
+  selectedFilters.status=[];
+  selectedFilters.rack=[];
+
+  updatePopupFilterCount();
+  updateFilterCount();
+}
+
+function resetFilters(){
+  document.getElementById('searchInput').value='';
+  resetPopupFilter();
+  searchStock();
+}
+
+function searchStock(){
+  const search=document.getElementById('searchInput').value.trim();
+  const grade=selectedFilters.grade;
+  const status=selectedFilters.status;
+  const rack=selectedFilters.rack;
+
+  google.script.run
+    .withSuccessHandler(function(response){
+      if(!response||!response.success){
+        document.getElementById('resultList').innerHTML='<tr><td class="empty">Gagal mengambil data stok.</td></tr>';
+        return;
+      }
+
+      renderResults(response);
+    })
+    .withFailureHandler(function(error){
+      console.error(error);
+      document.getElementById('resultList').innerHTML='<tr><td class="empty">Gagal mengambil data stok.</td></tr>';
+    })
+    .searchStock(search,grade,status,rack);
+}
+
+document.addEventListener('click',function(e){
+  const dropdown=document.querySelector('.filter-dropdown');
+  const menu=document.getElementById('filterMenu');
+
+  if(dropdown&&!dropdown.contains(e.target)){
+    menu.classList.remove('show');
+  }
+});
+
+function renderResults(response){
+  currentResults=response.results||[];
+  originalResults=currentResults.slice();
+  sortColumns=[];
+  detailSort={};
+  currentPage=1;
+
+  const totalRoll=currentResults.length;
+  const totalMeter=currentResults.reduce(function(total,item){
+    return total+Number(item.meter||0);
+  },0);
+  const totalProduct=buildGroups().length;
+  const totalCategory=new Set(
+    currentResults.map(function(item){
+      return item.category||'';
+    }).filter(Boolean)
+  ).size;
+
+  const overall=response.overallTotals||{};
+  function percent(value,total){
+    const result=Number(total)>0?Number(value)/Number(total)*100:0;
+    return result.toLocaleString('id-ID',{maximumFractionDigits:1})+'% dari total gudang';
+  }
+
+  document.getElementById('totalRoll').textContent=formatNumber(totalRoll)+' Roll';
+  document.getElementById('totalLength').textContent=formatNumber(totalMeter)+' Meter';
+  document.getElementById('totalProduct').textContent=formatNumber(totalProduct);
+  document.getElementById('totalCategory').textContent=formatNumber(totalCategory);
+
+  document.getElementById('totalRollPercent').textContent=percent(totalRoll,overall.roll);
+  document.getElementById('totalLengthPercent').textContent=percent(totalMeter,overall.meter);
+  document.getElementById('totalProductPercent').textContent=percent(totalProduct,overall.product);
+  document.getElementById('totalCategoryPercent').textContent=percent(totalCategory,overall.category);
+
+  renderCurrentView();
+}
+
+function renderCurrentView(){
+  const head=document.getElementById('tableHead');
+  const list=document.getElementById('resultList');
+
+  list.innerHTML='';
+
+  if(!currentResults.length){
+    head.innerHTML='<tr><th>Hasil</th></tr>';
+    list.innerHTML='<tr><td class="empty">Stok tidak ditemukan.</td></tr>';
+    updatePagination();
+    return;
+  }
+
+  if(currentViewMode==='roll'){
+    head.innerHTML=`
+      <tr>
+        <th class="sortable" onclick="sortResults('rollId')">
+          Roll ID
+          <span id="sort-rollId" class="sort-icon" data-sort="rollId">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('category')">
+          Kategori
+          <span id="sort-category" class="sort-icon" data-sort="category">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('fabricType')">
+          Jenis Kain
+          <span id="sort-fabricType" class="sort-icon" data-sort="fabricType">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('product')">
+          Produk
+          <span id="sort-product" class="sort-icon" data-sort="product">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('color')">
+          Warna
+          <span id="sort-color" class="sort-icon" data-sort="color">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th>Panjang</th>
+        <th class="sortable" onclick="sortResults('grade')">
+          Grade
+          <span id="sort-grade" class="sort-icon" data-sort="grade">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('status')">
+          Status
+          <span id="sort-status" class="sort-icon" data-sort="status">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('location')">
+          Location
+          <span id="sort-location" class="sort-icon" data-sort="location">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        ${buildColumnSettingsHeader()}
+      </tr>`;
+    renderRollTable();
+  }else{
+    head.innerHTML=`
+      <tr>
+        <th class="sortable" onclick="sortResults('category')">
+          Kategori
+          <span id="sort-category" class="sort-icon" data-sort="category">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('fabricType')">
+          Jenis Kain
+          <span id="sort-fabricType" class="sort-icon" data-sort="fabricType">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('product')">
+          Produk
+          <span id="sort-product" class="sort-icon" data-sort="product">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('color')">
+          Warna
+          <span id="sort-color" class="sort-icon" data-sort="color">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('gsm')">
+          GSM
+          <span id="sort-gsm" class="sort-icon" data-sort="gsm">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('width')">
+          Width
+          <span id="sort-width" class="sort-icon" data-sort="width">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th class="sortable" onclick="sortResults('rolls')">
+          Roll
+          <span id="sort-rolls" class="sort-icon" data-sort="rolls">
+            <svg viewBox="0 0 24 24">
+              <path class="sort-up" d="m7 9 5-5 5 5"></path>
+              <path class="sort-down" d="m7 15 5 5 5-5"></path>
+            </svg>
+          </span>
+        </th>
+        <th>Panjang</th>
+        <th>Detail</th>
+        ${buildColumnSettingsHeader()}
+      </tr>`;
+    renderGroupTable();
+  }
+
+  updateSortIcons();
+  updatePagination();
+  applyColumnVisibility();
+}
+
+function renderRollTable(){
+  const list=document.getElementById('resultList');
+
+  const totalPages=Math.ceil(currentResults.length/pageSize)||1;
+  if(currentPage>totalPages)currentPage=totalPages;
+
+  const start=(currentPage-1)*pageSize;
+  const end=Math.min(start+pageSize,currentResults.length);
+  const pageData=currentResults.slice(start,end);
+
+  let html='';
+
+  pageData.forEach(function(item){
+    const grade=String(item.grade||'').trim().toLowerCase();
+    const status=String(item.status||'').trim().toLowerCase();
+
+    html+=`
+      <tr>
+        <td>${item.rollId||'-'}</td>
+        <td>${item.category||'-'}</td>
+        <td>${item.fabricType||'-'}</td>
+        <td>${item.product||'-'}</td>
+        <td>${item.color||'-'}</td>
+        <td class="number-cell">${item.length||'-'}</td>
+        <td><span class="badge badge-${grade}">${item.grade||'-'}</span></td>
+        <td><span class="badge badge-${status}">${item.status||'-'}</span></td>
+        <td>${item.location||'-'}</td>
+      </tr>`;
+  });
+
+  list.innerHTML=html;
+}
+
+function buildGroups(){
+  const groups={};
+
+  currentResults.forEach(function(item){
+    const key=[
+      item.category||'',
+      item.fabricType||'',
+      item.product||'',
+      item.color||'',
+      item.gsm||'',
+      item.width||''
+    ].join('|');
+
+    if(!groups[key]){
+      groups[key]={
+        category:item.category||'',
+        fabricType:item.fabricType||'',
+        product:item.product||'',
+        color:item.color||'',
+        gsm:item.gsm||'',
+        width:item.width||'',
+        rolls:[],
+        meter:0,
+        yard:0
+      };
+    }
+
+    groups[key].rolls.push(item);
+    groups[key].meter+=Number(item.meter||0);
+    groups[key].yard+=Number(item.yard||0);
+  });
+
+  return Object.values(groups);
+}
+
+function formatGroupLength(group){
+  const parts=[];
+
+  if(group.meter>0){
+    parts.push(formatNumber(group.meter)+' Meter');
+  }
+
+  if(group.yard>0){
+    parts.push(formatNumber(group.yard)+' Yard');
+  }
+
+  return parts.length?parts.join(' + '):'-';
+}
+
+function getSortedGroups(){
+  const groups=buildGroups();
+
+  if(sortColumns.length){
+    groups.sort(function(a,b){
+      return compareMultiValues(a,b);
+    });
+  }
+
+  return groups;
+}
+
+function renderGroupTable(){
+  const list=document.getElementById('resultList');
+  const groups=getSortedGroups();
+
+  const totalPages=Math.ceil(groups.length/pageSize)||1;
+
+  if(currentPage>totalPages){
+    currentPage=totalPages;
+  }
+
+  const start=(currentPage-1)*pageSize;
+  const end=Math.min(start+pageSize,groups.length);
+  const pageGroups=groups.slice(start,end);
+
+  let html='';
+
+  pageGroups.forEach(function(group,index){
+    const actualIndex=start+index;
+    const id='group-'+actualIndex;
+
+    html+=`
+      <tr class="group-row" onclick="toggleGroup('${id}')">
+        <td>${group.category||'-'}</td>
+        <td>${group.fabricType||'-'}</td>
+        <td>${group.product||'-'}</td>
+        <td>${group.color||'-'}</td>
+        <td class="number-cell">${formatNumber(group.gsm)||'-'}</td>
+        <td class="number-cell">${formatNumber(group.width)||'-'}</td>
+        <td class="number-cell">${formatNumber(group.rolls.length)} Roll</td>
+        <td class="number-cell">${formatGroupLength(group)}</td>
+        <td><span class="expand-icon" id="${id}-icon">▶ Lihat Roll</span></td>
+      </tr>
+      <tr class="group-detail-row" id="${id}">
+        <td colspan="9" class="group-detail">
+          <table>
+            <thead>
+              <tr>
+                <th class="sortable" onclick="sortDetail(event,'${id}','rollId')">Roll ID <span id="detail-sort-${id}-rollId" class="sort-icon" data-sort="rollId"><svg viewBox="0 0 24 24"><path class="sort-up" d="m7 9 5-5 5 5"></path><path class="sort-down" d="m7 15 5 5 5-5"></path></svg></span></th>
+                <th class="sortable number-cell" onclick="sortDetail(event,'${id}','length')">Panjang <span id="detail-sort-${id}-length" class="sort-icon" data-sort="length"><svg viewBox="0 0 24 24"><path class="sort-up" d="m7 9 5-5 5 5"></path><path class="sort-down" d="m7 15 5 5 5-5"></path></svg></span></th>
+                <th class="sortable" onclick="sortDetail(event,'${id}','grade')">Grade <span id="detail-sort-${id}-grade" class="sort-icon" data-sort="grade"><svg viewBox="0 0 24 24"><path class="sort-up" d="m7 9 5-5 5 5"></path><path class="sort-down" d="m7 15 5 5 5-5"></path></svg></span></th>
+                <th class="sortable" onclick="sortDetail(event,'${id}','status')">Status <span id="detail-sort-${id}-status" class="sort-icon" data-sort="status"><svg viewBox="0 0 24 24"><path class="sort-up" d="m7 9 5-5 5 5"></path><path class="sort-down" d="m7 15 5 5 5-5"></path></svg></span></th>
+                <th class="sortable" onclick="sortDetail(event,'${id}','location')">Location <span id="detail-sort-${id}-location" class="sort-icon" data-sort="location"><svg viewBox="0 0 24 24"><path class="sort-up" d="m7 9 5-5 5 5"></path><path class="sort-down" d="m7 15 5 5 5-5"></path></svg></span></th>
+              </tr>
+            </thead>
+            <tbody id="${id}-body"></tbody>
+          </table>
+        </td>
+      </tr>`;
+  });
+
+  list.innerHTML=html;
+
+  pageGroups.forEach(function(group,index){
+    const actualIndex=start+index;
+    renderDetailRows('group-'+actualIndex,group.rolls);
+  });
+}
+
+function renderDetailRows(id,rolls){
+  const body=document.getElementById(id+'-body');
+  if(!body)return;
+
+  const sort=detailSort[id];
+  const sortedRolls=rolls.slice();
+
+  if(sort&&sort.direction){
+    sortedRolls.sort(function(a,b){
+      return compareValues(
+        a[sort.column],
+        b[sort.column],
+        sort.column,
+        sort.direction
+      );
+    });
+  }else{
+    sortedRolls.sort(function(a,b){
+      return compareValues(
+        a.rollId,
+        b.rollId,
+        'rollId',
+        1
+      );
+    });
+  }
+
+  let html='';
+
+  sortedRolls.forEach(function(item){
+    const grade=String(item.grade||'').trim().toLowerCase();
+    const status=String(item.status||'').trim().toLowerCase();
+
+    html+=`
+      <tr>
+        <td>${item.rollId||'-'}</td>
+        <td class="number-cell">${item.length||'-'}</td>
+        <td><span class="badge badge-${grade}">${item.grade||'-'}</span></td>
+        <td><span class="badge badge-${status}">${item.status||'-'}</span></td>
+        <td>${item.location||'-'}</td>
+      </tr>`;
+  });
+
+  body.innerHTML=html;
+  updateDetailSortIcons(id);
+}
+
+function toggleGroup(id){
+  const row=document.getElementById(id);
+  const icon=document.getElementById(id+'-icon');
+  if(!row)return;
+  const show=row.classList.toggle('show');
+  icon.textContent=show?'▼ Tutup Roll':'▶ Lihat Roll';
+}
+
+function getActiveSorts(){
+  const order=sortOrder[currentViewMode]||[];
+
+  return sortColumns
+    .filter(function(item){
+      return order.includes(item.column);
+    })
+    .sort(function(a,b){
+      return order.indexOf(a.column)-order.indexOf(b.column);
+    });
+}
+
+function compareMultiValues(a,b){
+  const sorts=getActiveSorts();
+
+  for(let i=0;i<sorts.length;i++){
+    const sort=sorts[i];
+    let valueA=a[sort.column];
+    let valueB=b[sort.column];
+
+    if(sort.column==='rolls'){
+      valueA=a.rolls.length;
+      valueB=b.rolls.length;
+    }
+
+    const result=compareValues(
+      valueA,
+      valueB,
+      sort.column,
+      sort.direction
+    );
+
+    if(result!==0)return result;
+  }
+
+  return 0;
+}
+
+function sortResults(column){
+  const index=sortColumns.findIndex(function(item){
+    return item.column===column;
+  });
+
+  if(index===-1){
+    sortColumns.push({
+      column:column,
+      direction:1
+    });
+  }else{
+    sortColumns[index].direction++;
+
+    if(sortColumns[index].direction>2){
+      sortColumns.splice(index,1);
+    }
+  }
+
+  currentPage=1;
+
+  if(currentViewMode==='roll'){
+    currentResults.sort(function(a,b){
+      return compareMultiValues(a,b);
+    });
+  }
+
+  detailSort={};
+  renderCurrentView();
+}
+
+function sortDetail(event,id,column){
+  event.stopPropagation();
+
+  if(!detailSort[id]){
+    detailSort[id]={
+      column:'',
+      direction:0
+    };
+  }
+
+  const sort=detailSort[id];
+
+  if(sort.column===column){
+    sort.direction++;
+
+    if(sort.direction>2){
+      sort.direction=0;
+    }
+  }else{
+    sort.column=column;
+    sort.direction=1;
+  }
+
+  if(sort.direction===0){
+    sort.column='';
+  }
+
+  const groups=getSortedGroups();
+  const groupIndex=Number(id.replace('group-',''));
+  const group=groups[groupIndex];
+
+  if(group){
+    renderDetailRows(id,group.rolls);
+  }
+}
+
+function compareValues(a,b,column,direction){
+  if(column==='length'){
+    const parseLength=function(value){
+      const text=String(value||'').trim();
+      const match=text.match(/^([\d.,]+)\s*(Meter|Yard)$/i);
+
+      if(!match){
+        return {unit:'',value:0};
+      }
+
+      const number=Number(match[1].replace(/\./g,'').replace(',','.'));
+
+      return {
+        unit:match[2].toLowerCase(),
+        value:isNaN(number)?0:number
+      };
+    };
+
+    const valueA=parseLength(a);
+    const valueB=parseLength(b);
+
+    if(valueA.unit!==valueB.unit){
+      if(valueA.unit==='meter')return direction===1?-1:1;
+      if(valueB.unit==='meter')return direction===1?1:-1;
+    }
+
+    return direction===1
+      ?valueA.value-valueB.value
+      :valueB.value-valueA.value;
+  }
+
+  if(column==='grade'){
+    const order={a:1,a1:2,b:3,bs:4};
+    const valueA=order[String(a||'').toLowerCase()]||99;
+    const valueB=order[String(b||'').toLowerCase()]||99;
+    return direction===1?valueA-valueB:valueB-valueA;
+  }
+
+  if(['gsm','width','rolls'].includes(column)){
+    const numA=Number(a||0);
+    const numB=Number(b||0);
+    return direction===1?numA-numB:numB-numA;
+  }
+
+  const valueA=String(a||'').toLowerCase();
+  const valueB=String(b||'').toLowerCase();
+
+  if(valueA<valueB)return direction===1?-1:1;
+  if(valueA>valueB)return direction===1?1:-1;
+  return 0;
+}
+
+function updateSortIcons(){
+  document.querySelectorAll('.sort-icon').forEach(function(icon){
+    icon.classList.remove('active','asc','desc');
+  });
+
+  const sorts=getActiveSorts();
+
+  sorts.forEach(function(sort){
+    const icon=document.querySelector(
+      '.sort-icon[data-sort="'+sort.column+'"]'
+    );
+
+    if(!icon)return;
+
+    icon.classList.add('active');
+    icon.classList.add(sort.direction===1?'asc':'desc');
+  });
+}
+
+function updateDetailSortIcons(id){
+  document.querySelectorAll('[id^="detail-sort-'+id+'-"]').forEach(function(icon){
+    icon.classList.remove('active','asc','desc');
+  });
+
+  const sort=detailSort[id];
+  if(!sort||!sort.column||sort.direction===0)return;
+
+  const icon=document.getElementById('detail-sort-'+id+'-'+sort.column);
+
+  if(icon){
+    icon.classList.add('active');
+    icon.classList.add(sort.direction===1?'asc':'desc');
+  }
+}
+
+function setViewMode(mode){
+  currentViewMode=mode;
+  sortColumns=[];
+  detailSort={};
+  currentPage=1;
+
+  document.getElementById('rollViewBtn').classList.toggle('active',mode==='roll');
+  document.getElementById('groupViewBtn').classList.toggle('active',mode==='group');
+
+  updatePageSizeOptions();
+  renderCurrentView();
+}
+
+function updatePageSizeOptions(){
+  let total=0;
+
+  if(currentViewMode==='roll'){
+    total=currentResults.length;
+  }else{
+    total=buildGroups().length;
+  }
+
+  const select=document.getElementById('pageSize');
+
+  Array.from(select.options).forEach(function(option){
+    const size=Number(option.value);
+    option.textContent=Math.min(size,total)+' / '+total;
+  });
+}
+
+function updatePagination(){
+  let total=0;
+
+  if(currentViewMode==='roll'){
+    total=currentResults.length;
+  }else{
+    total=buildGroups().length;
+  }
+
+  const totalPages=Math.ceil(total/pageSize)||1;
+
+  if(currentPage>totalPages){
+    currentPage=totalPages;
+  }
+
+  if(!total){
+    document.getElementById('pageInfo').textContent='0 data';
+    document.getElementById('pageButtons').innerHTML='';
+    updatePageSizeOptions();
+    return;
+  }
+
+  const start=(currentPage-1)*pageSize+1;
+  const end=Math.min(currentPage*pageSize,total);
+
+  document.getElementById('pageInfo').textContent=
+    start+'–'+end+' dari '+total+(currentViewMode==='roll'?' Roll':' Group');
+
+  renderPagination(totalPages);
+  updatePageSizeOptions();
+}
+
+function renderPagination(totalPages){
+  const container=document.getElementById('pageButtons');
+  let html='';
+
+  html+='<button class="page-btn" onclick="goPage('+(currentPage-1)+')" '+(currentPage===1?'disabled':'')+'>‹</button>';
+
+  let start=Math.max(1,currentPage-2);
+  let end=Math.min(totalPages,start+4);
+
+  if(end-start<4){
+    start=Math.max(1,end-4);
+  }
+
+  for(let i=start;i<=end;i++){
+    html+=`
+      <button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">
+        ${i}
+      </button>`;
+  }
+
+  html+='<button class="page-btn" onclick="goPage('+(currentPage+1)+')" '+(currentPage===totalPages?'disabled':'')+'>›</button>';
+
+  container.innerHTML=html;
+}
+
+function goPage(page){
+  let total=0;
+
+  if(currentViewMode==='roll'){
+    total=currentResults.length;
+  }else{
+    total=buildGroups().length;
+  }
+
+  const totalPages=Math.ceil(total/pageSize)||1;
+
+  if(page<1||page>totalPages)return;
+
+  currentPage=page;
+  renderCurrentView();
+
+  window.scrollTo({
+    top:0,
+    behavior:'smooth'
+  });
+}
+
+function changePageSize(){
+  pageSize=Number(document.getElementById('pageSize').value);
+  currentPage=1;
+  renderCurrentView();
+}
+
+function formatNumber(value){
+  const number=Number(value||0);
+  return number.toLocaleString('id-ID');
+}
+
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.filter-dropdown')){
+    document.querySelectorAll('.filter-menu').forEach(function(menu){menu.classList.remove('show')});
+  }
+});
+
+let searchTimer;
+document.getElementById('searchInput').addEventListener('input',function(){
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(searchStock,350);
+});
+
+document.getElementById('searchInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    clearTimeout(searchTimer);
+    searchStock();
+  }
+});
+
+loadColumnPreferences();
+searchStock();
+</script>
+</body>
+</html>
