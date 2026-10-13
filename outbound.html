@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barang Keluar</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif !important;background:#f5f5f5;color:#222}
+    .container{max-width:900px;margin:30px auto;padding:20px}
+    .card{background:white;border-radius:14px;padding:18px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .label{font-size:13px;font-weight:bold;margin-bottom:6px}
+    .label-roll{font-size:13px;margin-bottom:6px;color:#777}
+    .label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+    .value{font-size:16px;font-weight:600;margin-bottom:14px;word-break:break-word}
+    
+    h2{margin:0 0 20px}
+    input,select,textarea{width:100%;padding:13px;border:1px solid #ccc;border-radius:8px;background:white;font-family:Arial,sans-serif;font-size:14px}
+    textarea{resize:vertical;min-height:80px}
+    button{width:100%;border:none;border-radius:9px;padding:14px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:10px}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .btn-scan{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#AD2020;color:white}
+    .btn-search{background:#e9ecef;color:#222}
+    .btn-save{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#198754;color:white}
+    .btn-remove{width:auto;margin:0;padding:5px 10px;background:#f8d7da;color:#842029;font-size:14px}
+    .section-title{font-size:17px;font-weight:bold;margin-bottom:15px}
+    .section-note{font-size:13px;color:#888;margin-top:-8px;margin-bottom:16px}
+    .operator-card{background:#fff;border:2px solid #dee2e6}
+    .result-card{background:#f1f3f5;border:2px solid #AD2020}
+    .required{font-size:11px;font-weight:bold;color:#b02a37;background:#f8d7da;padding:3px 7px;border-radius:5px;margin-left:5px}
+    .operator-label{font-size:13px;font-weight:bold;color:#333;margin-bottom:6px}
+    .input-group{margin-bottom:15px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .roll-list{border:1px solid #dee2e6;border-radius:10px;overflow:hidden;background:#fff}
+    .roll-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid #eee}
+    .roll-item:last-child{border-bottom:0}
+    .roll-info{min-width:0}
+    .roll-id{font-size:15px;font-weight:bold;margin-bottom:4px}
+    .roll-detail{font-size:13px;color:#777;word-break:break-word}
+    .roll-header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .roll-count{display:inline-block;background:#198754;color:#fff;font-size:13px;font-weight:bold;padding:4px 9px;border-radius:20px;margin-left:5px;vertical-align:middle}
+    .btn-clear{width:auto;margin:0;padding:5px 9px;background:#f8d7da;color:#842029;font-size:12px}
+
+    .empty{text-align:center;color:#888;padding:20px;font-size:13px}
+    .message{display:none;padding:12px;border-radius:8px;font-size:14px}
+    .message.success{background:#d1e7dd;color:#0f5132}
+    .message.error{background:#f8d7da;color:#842029}
+    .message{margin-bottom:15px}
+    #resultCard,#confirmCard{display:none}
+    .success{background:#d1e7dd;color:#0f5132}
+    .error{background:#f8d7da;color:#842029}
+    .summary-group{background:#fff;border:1px solid #dee2e6;border-radius:10px;padding:14px;margin-bottom:12px}
+    .summary-product{font-size:15px;font-weight:bold;margin-bottom:10px}
+    .summary-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:13px}
+    .summary-subtotal{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #dee2e6;margin-top:7px;padding-top:10px;font-size:13px;font-weight:bold}
+    .summary-total{display:flex;justify-content:space-between;gap:10px;font-size:16px;font-weight:bold}
+
+    .grand-total{background:#d9ead3;color:#38761d;border-radius:10px;padding:15px;margin-top:15px}
+    .grand-total-title{font-size:13px;font-weight:bold}
+    .grand-total-value{font-size:20px;font-weight:bold;margin-top:5px}
+    .action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .action-row button{margin-top:10px}
+    @media(max-width:600px){
+      .container{margin:10px auto;padding:12px}
+      .grid{grid-template-columns:1fr 1fr}
+      .action-row{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<script>
+window.headerTitle='Barang Keluar';
+</script>
+<?!= include('header'); ?>
+
+<div class="container">
+
+  <div class="card operator-card">
+    <h2>📋 Barang Keluar</h2>
+    <div class="section-note">Pilih roll yang akan dikeluarkan dari gudang.</div>
+
+    <div class="label">Barcode Roll</div>
+    <input type="text" id="barcode" placeholder="Masukkan / scan barcode" autocomplete="off">
+    <button class="btn-scan" onclick="openScanner()">📷 SCAN QR CODE ROLL</button>
+    <button class="btn-search" onclick="addRoll()">🔍 TAMBAH ROLL</button>
+  </div>
+
+  <div id="scanMessage" class="message" style="margin-bottom:15px;"></div>
+
+  <div id="resultCard" class="card result-card">
+    <div class="section-title roll-header">
+      <span>📋 ROLL TERPILIH <span class="roll-count" id="rollCount">0 ROLL</span></span>
+      <button class="btn-clear" onclick="clearRolls()">🗑️ KOSONGKAN</button>
+    </div>
+    <div class="section-note">Daftar roll yang akan dikeluarkan.</div>
+
+    <div class="roll-list" id="rollList">
+      <div class="empty">Belum ada Roll yang dipilih.</div>
+    </div>
+  </div>
+
+  <div id="confirmCard" class="card operator-card">
+    <div class="section-title">📦 INFORMASI BARANG KELUAR</div>
+    <div class="section-note">Lengkapi informasi transaksi sebelum melakukan konfirmasi.</div>
+
+    <div class="input-group">
+      <div class="operator-label">Tujuan <span class="required">WAJIB</span></div>
+      <select id="destination">
+        <option value="">Pilih Tujuan</option>
+        <option value="Customer">Customer</option>
+        <option value="Produksi">Produksi</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <div class="operator-label">Customer</div>
+      <input type="text" id="customer" placeholder="Nama customer">
+    </div>
+
+    <div class="input-group">
+      <div class="operator-label">No. Dokumen</div>
+      <input type="text" id="documentNo" placeholder="Nomor surat jalan / dokumen">
+    </div>
+
+    <div class="input-group">
+      <div class="operator-label">Keterangan</div>
+      <textarea id="note" placeholder="Keterangan tambahan"></textarea>
+    </div>
+    
+    <div id="confirmMessage" class="message" style="margin-top:15px;"></div>
+
+    <button class="btn-scan" onclick="showConfirmation()">➡️ LANJUT KONFIRMASI</button>
+  </div>
+  
+
+  <div class="card operator-card" id="summaryCard" style="display:none">
+    <div class="section-title">📋 KONFIRMASI BARANG KELUAR</div>
+    <div class="section-note">Periksa rekap barang sebelum menyimpan transaksi.</div>
+    <div class="summary-group">
+      <div class="summary-row"><span>Tujuan</span><strong id="summaryDestination">-</strong></div>
+      <div class="summary-row"><span>Customer</span><strong id="summaryCustomer">-</strong></div>
+      <div class="summary-row"><span>No. Dokumen</span><strong id="summaryDocument">-</strong></div>
+    </div>
+
+    <div id="summaryContent"></div>
+
+    <div class="action-row">
+      <button class="btn-search" onclick="hideConfirmation()">← KEMBALI</button>
+      <button class="btn-save" onclick="saveOutbound()">💾 SIMPAN BARANG KELUAR</button>
+    </div>
+  </div>
+
+  <div id="saveMessage" class="message"></div>
+
+</div>
+
+<script>
+let selectedRolls=[];
+let rollIndex={};
+let rollIndexReady=false;
+
+function loadOutboundRolls(){
+  showMessage('⏳ Menyiapkan data Roll...','success');
+  google.script.run
+    .withSuccessHandler(function(result){
+      if(!result.success){
+        showMessage('❌ '+result.message,'error');
+        return;
+      }
+      rollIndex=result.rolls||{};
+      rollIndexReady=true;
+      hideMessage();
+      console.log('Outbound Roll Index:',result.count);
+    })
+    .withFailureHandler(function(error){
+      showMessage('❌ Gagal memuat data Roll: '+error.message,'error');
+    })
+    .getOutboundRollIndex();
+}
+
+function addRoll(){
+  hideMessage('scanMessage');
+  const input=document.getElementById('barcode');
+  const raw=input.value.trim();
+
+  if(!raw){
+    showMessage('scanMessage','Silakan masukkan atau scan barcode terlebih dahulu.','error');
+    return;
+  }
+
+  if(!rollIndexReady){
+    showMessage('scanMessage','⏳ Data Roll masih dimuat. Tunggu sebentar.','error');
+    return;
+  }
+
+  const rollIds=raw.split(/[\s,;]+/).map(function(id){
+    return id.trim();
+  }).filter(Boolean);
+
+  let added=[];
+  let duplicate=[];
+  let notFound=[];
+  let incomplete=[];
+
+  rollIds.forEach(function(rollId){
+    const key=rollId.toLowerCase();
+
+    const exists=selectedRolls.some(function(row){
+      return row.rollId.toLowerCase()===key;
+    });
+
+    if(exists){
+      duplicate.push(rollId);
+      return;
+    }
+
+    const result=rollIndex[key];
+
+    if(!result){
+      notFound.push(rollId);
+      return;
+    }
+
+    if(!result.valid){
+      incomplete.push(rollId+' ('+result.missing.join(', ')+')');
+      return;
+    }
+
+    selectedRolls.push(result.data);
+    added.push(rollId);
+  });
+
+  input.value='';
+
+  if(selectedRolls.length){
+    renderRollList();
+    document.getElementById('resultCard').style.display='block';
+    document.getElementById('confirmCard').style.display='block';
+  }
+
+  const messages=[];
+
+  if(added.length){
+    messages.push('✅ '+added.length+' Roll berhasil ditambahkan.');
+  }
+
+  if(duplicate.length){
+    messages.push('⚠️ Duplikat: '+duplicate.join(', '));
+  }
+
+  if(notFound.length){
+    messages.push('❌ Tidak ditemukan: '+notFound.join(', '));
+  }
+
+  if(incomplete.length){
+    messages.push('❌ Data belum lengkap: '+incomplete.join('; '));
+  }
+
+  showMessage('scanMessage',messages.join(' '),added.length?'success':'error');
+}
+
+function removeRoll(rollId){
+  selectedRolls=selectedRolls.filter(function(row){
+    return row.rollId!==rollId;
+  });
+  renderRollList();
+}
+
+function clearRolls(){
+  if(!selectedRolls.length)return;
+  selectedRolls=[];
+  renderRollList();
+  document.getElementById('resultCard').style.display='none';
+  document.getElementById('confirmCard').style.display='none';
+  document.getElementById('summaryCard').style.display='none';
+  hideMessage('scanMessage');
+  hideMessage('confirmMessage');
+  document.getElementById('barcode').focus();
+}
+
+function renderRollList(){
+  const list=document.getElementById('rollList');
+  updateRollCount();
+
+  if(!selectedRolls.length){
+    list.innerHTML='<div class="empty">Belum ada Roll yang dipilih.</div>';
+    return;
+  }
+
+  let html='';
+
+  selectedRolls.forEach(function(row){
+    html+='<div class="roll-item">';
+    html+='<div class="roll-info">';
+    html+='<div class="roll-id">'+escapeHtml(row.rollId)+'</div>';
+    html+='<div class="roll-detail">'+escapeHtml(row.product)+' · '+escapeHtml(row.color)+' · '+formatLength(row)+' · Grade '+escapeHtml(row.grade||'-')+'</div>';
+    html+='</div>';
+    html+='<button class="btn-remove" onclick="removeRoll(\''+escapeHtml(row.rollId)+'\')">×</button>';
+    html+='</div>';
+  });
+
+  list.innerHTML=html;
+}
+
+function updateRollCount(){
+  let meter=0;
+  let yard=0;
+
+  selectedRolls.forEach(function(row){
+    meter+=Number(row.meter||0);
+    yard+=Number(row.yard||0);
+  });
+
+  let text=selectedRolls.length+' ROLL';
+
+  if(meter)text+=' · '+formatNumber(meter)+' M';
+  if(yard)text+=' · '+formatNumber(yard)+' YD';
+
+  document.getElementById('rollCount').textContent=text;
+}
+
+function showConfirmation(){
+  if(!selectedRolls.length){
+    showMessage('confirmMessage','Pilih minimal 1 Roll.','error');
+    return;
+  }
+
+  const destination=document.getElementById('destination').value;
+
+  if(!destination){
+    showMessage('confirmMessage','Silakan pilih Tujuan.','error');
+    return;
+  }
+
+  document.getElementById('summaryDestination').textContent=document.getElementById('destination').value||'-';
+  document.getElementById('summaryCustomer').textContent=document.getElementById('customer').value.trim()||'-';
+  document.getElementById('summaryDocument').textContent=document.getElementById('documentNo').value.trim()||'-';
+
+  document.getElementById('destination').disabled=true;
+  document.getElementById('customer').disabled=true;
+  document.getElementById('documentNo').disabled=true;
+  document.getElementById('note').disabled=true;
+
+  renderSummary();
+  document.getElementById('summaryCard').style.display='block';
+  hideMessage('confirmMessage');
+  document.getElementById('summaryCard').scrollIntoView({behavior:'smooth'});
+}
+
+function renderSummary(){
+  const groups={};
+  let totalRoll=0;
+  let totalMeter=0;
+  let totalYard=0;
+
+  selectedRolls.forEach(function(row){
+    const key=(row.product||'-')+'|'+(row.color||'-');
+
+    if(!groups[key]){
+      groups[key]={
+        product:row.product||'-',
+        color:row.color||'-',
+        grades:{}
+      };
+    }
+
+    const grade=row.grade||'-';
+
+    if(!groups[key].grades[grade]){
+      groups[key].grades[grade]={roll:0,meter:0,yard:0};
+    }
+
+    groups[key].grades[grade].roll++;
+    groups[key].grades[grade].meter+=Number(row.meter||0);
+    groups[key].grades[grade].yard+=Number(row.yard||0);
+  });
+
+  let html='';
+
+  Object.keys(groups).forEach(function(key){
+    const group=groups[key];
+    let subtotalRoll=0;
+    let subtotalMeter=0;
+    let subtotalYard=0;
+
+    html+='<div class="summary-group">';
+    html+='<div class="summary-product">'+escapeHtml(group.product)+' — '+escapeHtml(group.color)+'</div>';
+
+    Object.keys(group.grades).forEach(function(grade){
+      const item=group.grades[grade];
+
+      subtotalRoll+=item.roll;
+      subtotalMeter+=item.meter;
+      subtotalYard+=item.yard;
+
+      totalRoll+=item.roll;
+      totalMeter+=item.meter;
+      totalYard+=item.yard;
+
+      html+='<div class="summary-row">';
+      html+='<span>Grade '+escapeHtml(grade)+'</span>';
+      html+='<span>'+item.roll+' Roll · '+formatNumber(item.meter)+' m'+(item.yard?' · '+formatNumber(item.yard)+' yd':'')+'</span>';
+      html+='</div>';
+    });
+
+    html+='<div class="summary-subtotal">';
+    html+='<span>Subtotal</span>';
+    html+='<span>'+subtotalRoll+' Roll · '+formatNumber(subtotalMeter)+' m'+(subtotalYard?' · '+formatNumber(subtotalYard)+' yd':'')+'</span>';
+    html+='</div>';
+    html+='</div>';
+  });
+
+  html+='<div class="grand-total">';
+  html+='<div class="summary-total">';
+  html+='<span>TOTAL KESELURUHAN</span>';
+  html+='<span>'+totalRoll+' Roll · '+formatNumber(totalMeter)+' m'+(totalYard?' · '+formatNumber(totalYard)+' yd':'')+'</span>';
+  html+='</div>';
+  html+='</div>';
+
+  document.getElementById('summaryContent').innerHTML=html;
+}
+
+function hideConfirmation(){
+  document.getElementById('summaryCard').style.display='none';
+  document.getElementById('destination').disabled=false;
+  document.getElementById('customer').disabled=false;
+  document.getElementById('documentNo').disabled=false;
+  document.getElementById('note').disabled=false;
+}
+
+function saveOutbound(){
+  const button=document.querySelector('.btn-save');
+  if(!selectedRolls.length){
+    showMessage('saveMessage','Tidak ada Roll yang dipilih.','error');
+    return;
+  }
+
+  const destination=document.getElementById('destination').value;
+  const customer=document.getElementById('customer').value.trim();
+  const documentNo=document.getElementById('documentNo').value.trim();
+  const note=document.getElementById('note').value.trim();
+
+  if(!destination){
+    showMessage('saveMessage','Silakan pilih Tujuan.','error');
+    return;
+  }
+
+  button.disabled=true;
+  button.textContent='⏳ MENYIMPAN...';
+  hideMessage('saveMessage');
+
+  const rollIds=selectedRolls.map(function(row){
+    return row.rollId;
+  });
+  const token=localStorage.getItem('warehouseToken');
+
+  google.script.run
+    .withSuccessHandler(function(result){
+      button.disabled=false;
+      button.textContent='💾 SIMPAN BARANG KELUAR';
+
+      if(!result.success){
+        showMessage('saveMessage','❌ '+result.message,'error');
+        return;
+      }
+
+      showMessage('saveMessage','✅ '+result.message+' ID: '+result.outboundId,'success');
+
+      selectedRolls=[];
+      renderRollList();
+      document.getElementById('resultCard').style.display='none';
+      document.getElementById('confirmCard').style.display='none';
+      document.getElementById('summaryCard').style.display='none';
+      document.getElementById('destination').disabled=false;
+      document.getElementById('customer').disabled=false;
+      document.getElementById('documentNo').disabled=false;
+      document.getElementById('note').disabled=false;
+    })
+    .withFailureHandler(function(error){
+      button.disabled=false;
+      button.textContent='💾 SIMPAN BARANG KELUAR';
+      showMessage('saveMessage','❌ Gagal menyimpan: '+error.message,'error');
+    })
+    .saveOutbound(rollIds,destination,customer,documentNo,note,token);
+}
+
+function openScanner(){
+  hideMessage('saveMessage');
+  hideMessage('scanMessage');
+
+  const win=window.open('','_blank');
+
+  if(!win){
+    showMessage('Browser memblokir popup. Izinkan popup untuk halaman ini.','error');
+    return;
+  }
+
+  const html='<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Scan Barcode Roll</title><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"><\/script><style>body{margin:0;padding:15px;font-family:Arial;background:#111;color:white;text-align:center}h2{margin-top:10px}#qr-reader{width:100%;max-width:450px;margin:20px auto}.info{margin-top:20px;font-size:14px;color:#ccc}</style></head><body><h2>Scan Barcode Roll</h2><div id="qr-reader"></div><div class="info">Arahkan kamera ke barcode roll</div><script>var val="";var s=new Html5QrcodeScanner("qr-reader",{fps:15,qrbox:{width:280,height:280},rememberLastUsedCamera:true,videoConstraints:{facingMode:"environment"},supportedScanTypes:[Html5QrcodeScanType.SCAN_TYPE_CAMERA,Html5QrcodeScanType.SCAN_TYPE_FILE],formatsToSupport:[Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.QR_CODE]},false);s.render(function(d){val=d;finish()},function(){});function finish(){try{s.clear()}catch(e){}if(val&&window.opener)try{window.opener.postMessage({type:"outbound-scanned",value:val},"*")}catch(e){}setTimeout(function(){window.close()},300);}<\/script></body></html>';
+
+  win.document.write(html);
+  win.document.close();
+}
+
+window.addEventListener('message',function(e){
+  if(e.data&&e.data.type==='outbound-scanned'){
+    hideMessage();
+    document.getElementById('barcode').value=e.data.value;
+    addRoll();
+  }
+});
+
+function formatLength(row){
+  if(row.meter)return formatNumber(row.meter)+' Meter';
+  if(row.yard)return formatNumber(row.yard)+' Yard';
+  return '-';
+}
+
+function formatNumber(value){
+  return Number(value||0).toLocaleString('id-ID',{maximumFractionDigits:2});
+}
+
+let messageTimer;
+
+let messageTimers={};
+
+function showMessage(id,message,type){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=message;
+  el.className='message '+(type||'error');
+  el.style.display='block';
+  clearTimeout(messageTimers[id]);
+  messageTimers[id]=setTimeout(function(){
+    el.style.display='none';
+  },3000);
+}
+
+function hideMessage(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  clearTimeout(messageTimers[id]);
+  el.style.display='none';
+}
+
+document.getElementById('barcode').addEventListener('input',function(){
+  hideMessage('saveMessage');
+  hideMessage('scanMessage');
+});
+
+function escapeHtml(value){
+  return String(value||'').replace(/[&<>"']/g,function(char){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char];
+  });
+}
+
+document.getElementById('barcode').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    addRoll();
+  }
+});
+
+window.addEventListener('load',function(){
+  loadOutboundRolls();
+});
+</script>
+
+</body>
+</html>
