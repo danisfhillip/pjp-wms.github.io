@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Opname Roll</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif !important;background:#f5f5f5;color:#222}
+    .container{max-width:900px;margin:30px auto;padding:20px}
+
+    .menu-btn{width:42px;height:42px;border:0;border-radius:10px;background:#111;color:#fff;font-size:22px;cursor:pointer;margin:0;padding:0}
+    .header-title{font-size:20px;font-weight:700}
+    .menu{display:none;position:absolute;top:65px;left:15px;width:220px;background:#fff;border-radius:12px;padding:8px;box-shadow:0 8px 25px rgba(0,0,0,.15);z-index:999}
+    .menu.show{display:block}
+    .menu-item{padding:12px;border-radius:8px;cursor:pointer}
+    .menu-item:hover{background:#f2f2f2}
+
+    h2{margin:0 0 20px}
+
+    .card{background:white;border-radius:14px;padding:18px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .label{font-size:13px;font-weight:bold;margin-bottom:6px}
+    .label-roll{font-size:13px;margin-bottom:6px;color:#777}
+    .label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+    .unit-label{font-size:13px;color:#777}
+
+    .length-input{position:relative;display:flex;gap:8px}
+    .length-input input{flex:1}
+    .length-input select{width:110px}
+    .location-input{display:flex;gap:8px;margin-bottom:8px}
+    .location-input input{flex:1;min-width:0}
+    .location-input button{width:220px;margin-top:0;flex:none}
+    .location-scan-btn{width:58px!important;padding:5px!important;margin-top:0!important;display:flex;align-items:center;justify-content:center;flex:none}
+    .location-scan-btn svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    
+    .value{font-size:16px;font-weight:600;margin-bottom:14px;word-break:break-word}
+
+    input,select{width:100%;padding:13px;border:1px solid #ccc;border-radius:8px;background:white}
+    button{width:100%;border:none;border-radius:9px;padding:14px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:10px}
+    button:disabled{opacity:.5;cursor:not-allowed}
+
+    .btn-scan{background:linear-gradient(180deg, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0.25) 100%), #AD2020;color:white}
+    .btn-search{background:#e9ecef;color:#222}
+    .btn-save{background:linear-gradient(180deg, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0.25) 100%), #198754;color:white}
+
+    #result{display:none}
+    #message{display:none;padding:12px;border-radius:8px;margin-top:15px;font-size:14px}
+    #searchMessage{display:none;padding:12px;border-radius:8px;margin-bottom:15px;font-size:14px}
+    .save-message{display:none;padding:12px 15px;border-radius:8px;margin-bottom:15px;background:#d9ead3;color:#38761d;font-size:14px}
+    .success{background:#d1e7dd;color:#0f5132}
+    .error{background:#f8d7da;color:#842029}
+
+    .status-box{padding:15px;border-radius:10px;margin-top:15px;text-align:center;font-weight:bold;display:none}
+    .status-sesuai{background:#d1e7dd;color:#0f5132}
+    .status-berubah{background:#fff3cd;color:#664d03}
+    
+    .section-title{font-size:17px;font-weight:bold;margin-bottom:15px}
+    .section-note{font-size:13px;color:#888;margin-top:-8px;margin-bottom:16px}
+    .result-card{background:#f1f3f5;border:2px solid #AD2020}
+    .operator-card{background:#fff;border:2px solid #dee2e6}
+    .required{font-size:11px;font-weight:bold;color:#b02a37;background:#f8d7da;padding:3px 7px;border-radius:5px;margin-left:5px}
+    .operator-label{font-size:13px;font-weight:bold;color:#333;margin-bottom:6px}
+
+    .grade-A,.status-fastmoving{background:#d9ead3;color:#38761d}
+    .grade-A1,.status-slowmoving{background:#ffe599;color:#7f6000}
+    .grade-B,.status-returan{background:#f9cb9c;color:#783f04}
+    .grade-BS,.status-deadstock{background:#f4cccc;color:#660000}
+    .value-badge{display:inline-block;padding:5px 10px;border-radius:6px;font-weight:bold}
+
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .input-group{margin-bottom:15px}
+
+    .location-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+
+    /* @media(max-width:500px){body{padding:12px}} */
+    @media(max-width:600px){
+      .container{margin:10px auto;padding:12px}
+      .location-grid{grid-template-columns:repeat(3,1fr)}
+      .location-grid select:first-child{grid-column:1/4}
+      .info{grid-template-columns:1fr}
+      .location-input button{width:170px;font-size:13px;padding:13px 8px}
+    }
+  </style>
+</head>
+<body>
+
+<script>
+window.headerTitle='Stock Opname Roll';
+</script>
+<?!= include('header'); ?>
+
+<div class="container">
+  <div class="card operator-card">
+    <h2>📋 Stock Opname Roll</h2>
+    <div class="section-note">Periksa dan perbarui panjang, lokasi, grade, dan status roll berdasarkan kondisi aktual.</div>
+
+    <div class="label">Barcode Roll</div>
+    <input type="text" id="barcode" placeholder="Masukkan / scan barcode" autocomplete="off">
+    <button class="btn-scan" onclick="openScanner()">📷 SCAN QR CODE ROLL</button>
+    <button class="btn-search" onclick="searchRoll()">🔍 CARI ROLL</button>
+  </div>
+
+  <div id="searchMessage"></div>
+  <div id="saveMessage" class="save-message"></div>
+
+  <div class="card result-card" id="result">
+    <div class="section-title">📋 DATA ROLL</div>
+    <div class="section-note">Data dari database — hanya sebagai referensi</div>
+    <div class="grid">
+      <div><div class="label-roll">Barcode / Roll ID</div><div class="value" id="rollId">-</div></div>
+      <!-- <div><div class="label-roll">SKU</div><div class="value" id="sku">-</div></div> -->
+      <div><div class="label-roll">Kode Desain</div><div class="value" id="design">-</div></div>
+      <div><div class="label-roll">Nama Produk</div><div class="value" id="product">-</div></div>
+      <div><div class="label-roll">Warna</div><div class="value" id="color">-</div></div>
+      <div><div class="label-roll">Lokasi</div><div class="value" id="rollLocation">-</div></div>
+      <div><div class="label-roll">Lebar</div><div class="value" id="width">-</div></div>
+      <div><div class="label-roll">GSM</div><div class="value" id="gsm">-</div></div>
+
+      <div>
+        <div class="label-roll">Panjang</div>
+        <div class="value" id="rollLength">-</div>
+      </div>
+
+      <div><div class="label-roll">Grade</div><div class="value"><span class="value-badge" id="rollGrade">-</span></div></div>
+      <div><div class="label-roll">Status</div><div class="value"><span class="value-badge" id="rollStatus">-</span></div></div>
+      <div><div class="label-roll">Last Opname</div><div class="value" id="lastOpname">-</div></div>
+      <div><div class="label-roll">Keterangan</div><div class="value" id="rollNote">-</div></div>
+    </div>
+  </div>
+
+  <div class="card operator-card" id="opname" style="display:none;">
+    <div class="section-title">✏️ ISI / VERIFIKASI DATA</div>
+    <div class="section-note">Periksa dan lengkapi data berikut sebelum menyimpan.</div>
+
+    <div class="input-group">
+      <div class="operator-label">Panjang Aktual <span class="required">WAJIB</span></div>
+      <div class="length-input">
+        <input type="number" id="actualLength" step="0.01" min="0" placeholder="Masukkan panjang aktual">
+        <select id="actualUnit">
+          <option value="">Pilih...</option>
+          <option value="Meter">Meter</option>
+          <option value="Yard">Yard</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <div class="operator-label">Lokasi Aktual <span class="required">WAJIB</span></div>
+      <div class="location-input">
+        <input type="text" id="locationBarcode" placeholder="Masukkan / scan QR Location" autocomplete="off">
+        <button type="button" class="btn-scan location-scan-btn" onclick="openLocationScanner()" title="Scan QR Location">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 8V5a1 1 0 0 1 1-1h3"/>
+            <path d="M16 4h3a1 1 0 0 1 1 1v3"/>
+            <path d="M20 16v3a1 1 0 0 1-1 1h-3"/>
+            <path d="M8 20H5a1 1 0 0 1-1-1v-3"/>
+            <path d="M8 8h3v3H8z"/>
+            <path d="M13 13h3v3h-3z"/>
+            <path d="M13 8h1"/>
+            <path d="M16 8h1"/>
+            <path d="M8 13h1"/>
+            <path d="M8 16h1"/>
+          </svg>
+        </button>
+      </div>
+      <div class="location-grid">
+        <select id="actualLocationType" onchange="changeLocationType()">
+          <option value="">Pilih Tipe</option>
+          <option value="Rak">Rak</option>
+          <option value="Pallet">Pallet</option>
+        </select>
+        <select id="actualRack" onchange="changeRack()" disabled>
+          <option value="">Pilih Tipe dulu</option>
+        </select>
+        <select id="actualPosition" onchange="changePosition()" disabled>
+          <option value="">Pilih Rack dulu</option>
+        </select>
+        <select id="actualLevel" onchange="changeLevel()" disabled>
+          <option value="">Pilih Posisi dulu</option>
+        </select>
+      </div>
+      <input type="hidden" id="actualLocation">
+    </div>
+
+    <div class="input-group">
+      <div class="operator-label">Grade Aktual <span class="required">WAJIB</span></div>
+      <select id="actualGrade">
+        <option value="">Pilih Grade</option>
+        <option value="A">A</option>
+        <option value="A1">A1</option>
+        <option value="B">B</option>
+        <option value="BS">BS</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <div class="operator-label">Status Aktual <span class="required">WAJIB</span></div>
+      <select id="actualStatus">
+        <option value="">Pilih Status</option>
+        <option value="Fastmoving">Fastmoving</option>
+        <option value="Slowmoving">Slowmoving</option>
+        <option value="Returan">Returan</option>
+        <option value="Deadstock">Deadstock</option>
+      </select>
+    </div>
+
+    
+    <div class="input-group">
+      <div class="operator-label">Keterangan</div>
+      <textarea
+        id="keterangan"
+        rows="3"
+        placeholder="Tambahkan keterangan jika diperlukan..."
+        style="width:100%;padding:13px;border:1px solid #ccc;border-radius:8px;font-family:Arial,sans-serif;resize:vertical;"
+      ></textarea>
+    </div>
+
+    <button class="btn-save" id="saveButton" onclick="saveOpname()">💾 SIMPAN OPNAME</button>
+
+    <div id="statusBox" class="status-box"></div>
+
+    <div id="message"></div>
+
+  </div>
+</div>
+
+<script>
+// function toggleMenu(){
+//   document.getElementById('menu').classList.toggle('show');
+// }
+
+let currentRoll=null;
+let rollDatabase={};
+let rollDatabaseReady=false;
+let rollDatabaseLoading=false;
+let lastSavedRollId='';
+
+function resetBarcodeInput(){
+  const barcode=document.getElementById('barcode');
+  const message=document.getElementById('searchMessage');
+
+  barcode.value='';
+  barcode.focus();
+
+  message.style.display='none';
+  message.textContent='';
+  message.className='';
+}
+
+function loadRollDatabase(){
+  if(rollDatabaseLoading)return;
+
+  rollDatabaseLoading=true;
+
+  const searchButton=document.querySelector('.btn-search');
+
+  searchButton.disabled=true;
+  searchButton.textContent='⏳ MENYIAPKAN DATA...';
+
+  google.script.run
+    .withSuccessHandler(function(response){
+
+      rollDatabaseLoading=false;
+
+      if(!response.success){
+
+        rollDatabaseReady=false;
+
+        searchButton.disabled=false;
+        searchButton.textContent='🔍 CARI ROLL';
+
+        showSearchMessage(
+          response.message||'Gagal memuat database roll.',
+          'error'
+        );
+
+        return;
+      }
+
+      rollDatabase={};
+
+      response.data.forEach(function(item){
+        const rollId=String(item['Roll ID']||'').trim().toLowerCase();
+
+        if(rollId){
+          rollDatabase[rollId]=item;
+        }
+      });
+
+      rollDatabaseReady=true;
+
+      searchButton.disabled=false;
+      searchButton.textContent='🔍 CARI ROLL';
+
+      // RESET TOTAL SETELAH DATABASE SIAP
+      const barcode=document.getElementById('barcode');
+      const message=document.getElementById('searchMessage');
+
+      barcode.value='';
+
+      message.style.display='none';
+      message.textContent='';
+      message.className='';
+
+      // Tunggu DOM selesai update lalu fokus
+      setTimeout(function(){
+        barcode.focus();
+      },50);
+
+      console.log(
+        'Database ROLL siap:',
+        Object.keys(rollDatabase).length,
+        'roll'
+      );
+
+    })
+    .withFailureHandler(function(error){
+
+      rollDatabaseLoading=false;
+      rollDatabaseReady=false;
+
+      searchButton.disabled=false;
+      searchButton.textContent='🔍 CARI ROLL';
+
+      showSearchMessage(
+        'Gagal memuat database roll: '+error.message,
+        'error'
+      );
+
+    })
+    .getRollOpnameDatabase();
+}
+
+document.getElementById('barcode').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){
+    e.preventDefault();
+
+    const searchButton=document.querySelector('.btn-search');
+
+    if(searchButton.disabled)return;
+
+    searchRoll();
+  }
+});
+
+document.getElementById('locationBarcode').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){
+    e.preventDefault();
+
+    const locationId=this.value.trim();
+
+    if(!locationId)return;
+
+    setLocationActual(locationId);
+  }
+});
+
+function loadLocations(){
+  google.script.run
+    .withSuccessHandler(function(locations){
+      window.locationMaster=locations;
+    })
+    .getLocationMaster();
+}
+
+function changeLocationType(){
+  const type=document.getElementById('actualLocationType').value;
+  const rack=document.getElementById('actualRack');
+  const position=document.getElementById('actualPosition');
+  const level=document.getElementById('actualLevel');
+
+  rack.innerHTML='<option value="">Pilih Tipe dulu</option>';
+  position.innerHTML='<option value="">Pilih Rack dulu</option>';
+  level.innerHTML='<option value="">Pilih Posisi dulu</option>';
+  rack.disabled=true;
+  position.disabled=true;
+  level.disabled=true;
+
+  if(type==='Rak'){
+    rack.innerHTML='<option value="">Pilih Rack</option>';
+    rack.disabled=false;
+    const racks=[...new Set(window.locationMaster.filter(item=>item.type==='Rak').map(item=>item.rack))];
+    racks.forEach(function(item){
+      const option=document.createElement('option');
+      option.value=item;
+      option.textContent=item;
+      rack.appendChild(option);
+    });
+  }
+}
+
+function setLocationActual(locationId){
+  const type=document.getElementById('actualLocationType');
+  const rack=document.getElementById('actualRack');
+  const position=document.getElementById('actualPosition');
+  const level=document.getElementById('actualLevel');
+
+  document.getElementById('locationBarcode').value=(!locationId||locationId==='-')?'':locationId;
+
+  type.value='';
+  rack.innerHTML='<option value="">Pilih Tipe dulu</option>';
+  position.innerHTML='<option value="">Pilih Rack dulu</option>';
+  level.innerHTML='<option value="">Pilih Posisi dulu</option>';
+  rack.disabled=true;
+  position.disabled=true;
+  level.disabled=true;
+  document.getElementById('actualLocation').value='';
+
+  if(!locationId || locationId==='-')return;
+
+  const found=window.locationMaster.find(function(item){
+    return item.id===locationId;
+  });
+
+  if(!found)return;
+
+  type.value=found.type;
+
+  if(found.type==='Rak'){
+    changeLocationType();
+
+    rack.value=found.rack;
+    changeRack();
+
+    position.value=found.position;
+    changePosition();
+
+    level.value=found.level;
+    changeLevel();
+  }
+
+  document.getElementById('actualLocation').value=found.id;
+}
+
+function changeRack(){
+  const rack=document.getElementById('actualRack').value;
+  const position=document.getElementById('actualPosition');
+  const level=document.getElementById('actualLevel');
+
+  position.innerHTML='<option value="">Pilih Rack dulu</option>';
+  level.innerHTML='<option value="">Pilih Posisi dulu</option>';
+  position.disabled=true;
+  level.disabled=true;
+
+  if(!rack)return;
+
+  position.innerHTML='<option value="">Pilih Posisi</option>';
+  position.disabled=false;
+
+  const positions=[...new Set(window.locationMaster.filter(item=>item.type==='Rak'&&item.rack===rack).map(item=>item.position))];
+  positions.forEach(function(item){
+    const option=document.createElement('option');
+    option.value=item;
+    option.textContent=item;
+    position.appendChild(option);
+  });
+}
+
+function changePosition(){
+  const rack=document.getElementById('actualRack').value;
+  const position=document.getElementById('actualPosition').value;
+  const level=document.getElementById('actualLevel');
+
+  level.innerHTML='<option value="">Pilih Posisi dulu</option>';
+  level.disabled=true;
+
+  if(!rack||!position)return;
+
+  level.innerHTML='<option value="">Pilih Level</option>';
+  level.disabled=false;
+
+  const levels=window.locationMaster.filter(item=>item.type==='Rak'&&item.rack===rack&&item.position===position).map(item=>item.level);
+  levels.forEach(function(item){
+    const option=document.createElement('option');
+    option.value=item;
+    option.textContent=item;
+    level.appendChild(option);
+  });
+}
+
+function changeLevel(){
+  const rack=document.getElementById('actualRack').value;
+  const position=document.getElementById('actualPosition').value;
+  const level=document.getElementById('actualLevel').value;
+  const location=document.getElementById('actualLocation');
+
+  if(!rack || !position || !level){
+    location.value='';
+    return;
+  }
+
+  const found=window.locationMaster.find(function(item){
+    return item.type==='Rak' &&
+      item.rack===rack &&
+      item.position===position &&
+      item.level===level;
+  });
+
+  location.value=found ? found.id : '';
+}
+
+function openScanner() {
+  const win = window.open('', '_blank');
+  if (!win) {
+    showMessage('Browser memblokir popup. Izinkan popup untuk halaman ini.','error');
+    return;
+  }
+
+  const html = `<!DOCTYPE html>
+  <html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Barcode</title>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"><\/script>
+
+    <style>
+      body{margin:0;padding:15px;font-family:Arial;background:#111;color:white;text-align:center}
+      h2{margin-top:10px}
+      #qr-reader{width:100%;max-width:450px;margin:20px auto}
+      .info{margin-top:20px;font-size:14px;color:#ccc}
+    </style>
+  </head>
+
+  <body>
+    <h2>Scan Barcode Roll</h2>
+    <div id="qr-reader"></div>
+    <div class="info">Arahkan kamera ke barcode roll</div>
+
+    <script>
+      var val="";
+
+      var s=new Html5QrcodeScanner("qr-reader",{
+        fps:15,
+        qrbox:{width:280,height:280},
+        rememberLastUsedCamera:true,
+        videoConstraints:{facingMode:"environment"},
+        supportedScanTypes:[
+          Html5QrcodeScanType.SCAN_TYPE_CAMERA,
+          Html5QrcodeScanType.SCAN_TYPE_FILE
+        ],
+        formatsToSupport:[
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.QR_CODE
+        ]
+      },false);
+
+      s.render(function(d){
+        if(val)return;
+
+        val=d;
+
+        try{
+          window.opener.postMessage({
+            type:"barcode-scanned",
+            value:d
+          },"*");
+        }catch(e){}
+
+        setTimeout(function(){
+          finish();
+        },300);
+      },function(){});
+
+      function finish(){
+        try{s.clear()}catch(e){}
+        window.close();
+      }
+    <\/script>
+  </body>
+  </html>`;
+
+  win.document.write(html);
+  win.document.close();
+}
+
+function openLocationScanner(){
+  const win=window.open('','_blank');
+
+  if(!win){
+    showMessage('Browser memblokir popup. Izinkan popup untuk halaman ini.','error');
+    return;
+  }
+
+  win.document.open();
+
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width,initial-scale=1.0">
+      <title>Scan Location</title>
+      <style>
+        body{
+          margin:0;
+          padding:15px;
+          font-family:Arial;
+          background:#111;
+          color:white;
+          text-align:center
+        }
+        h2{margin:10px 0}
+        #qr-reader{
+          width:100%;
+          max-width:450px;
+          margin:20px auto
+        }
+        .info{
+          margin-top:20px;
+          font-size:14px;
+          color:#ccc
+        }
+      </style>
+    </head>
+    <body>
+      <h2>Scan QR Location</h2>
+      <div id="qr-reader"></div>
+      <div class="info" id="info">Memuat scanner...</div>
+    </body>
+    </html>
+  `);
+
+  win.document.close();
+
+  const script=win.document.createElement('script');
+
+  script.src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+
+  script.onload=function(){
+
+    const info=win.document.getElementById('info');
+
+    if(!win.Html5QrcodeScanner){
+      info.textContent='Scanner gagal dimuat.';
+      return;
+    }
+
+    info.textContent='Arahkan kamera ke QR Location';
+
+    let scanned=false;
+
+    const scanner=new win.Html5QrcodeScanner(
+      'qr-reader',
+      {
+        fps:15,
+        qrbox:{
+          width:280,
+          height:280
+        },
+        rememberLastUsedCamera:true,
+        videoConstraints:{
+          facingMode:'environment'
+        },
+        supportedScanTypes:[
+          win.Html5QrcodeScanType.SCAN_TYPE_CAMERA,
+          win.Html5QrcodeScanType.SCAN_TYPE_FILE
+        ],
+        formatsToSupport:[
+          win.Html5QrcodeSupportedFormats.QR_CODE
+        ]
+      },
+      false
+    );
+
+    scanner.render(
+      function(decodedText){
+
+        if(scanned)return;
+
+        scanned=true;
+
+        try{
+          win.opener.postMessage({
+            type:'location-scanned',
+            value:decodedText
+          },'*');
+        }catch(e){}
+
+        setTimeout(function(){
+          try{
+            scanner.clear();
+          }catch(e){}
+
+          win.close();
+        },300);
+
+      },
+      function(errorMessage){
+        // Abaikan error scanning sementara
+      }
+    );
+  };
+
+  script.onerror=function(){
+
+    const info=win.document.getElementById('info');
+
+    if(info){
+      info.textContent='Gagal memuat scanner. Periksa koneksi internet.';
+    }
+  };
+
+  win.document.head.appendChild(script);
+}
+
+window.addEventListener('message',function(e) {
+  if (e.data && e.data.type === 'barcode-scanned' && e.data.value) {
+    document.getElementById('barcode').value = e.data.value;
+    searchRoll();
+  }
+});
+
+window.addEventListener('message',function(e){
+  if(e.data&&e.data.type==='location-scanned'&&e.data.value){
+    const locationId=e.data.value.trim();
+    playSuccessSound();
+    document.getElementById('locationBarcode').value=locationId;
+    setLocationActual(locationId);
+  }
+});
+
+function searchRoll(){
+  const barcode=document.getElementById('barcode').value.trim();
+
+  if(!barcode)return;
+
+  clearMessages();
+
+  if(!rollDatabaseReady){
+    showMessage('Database Roll masih dimuat. Tunggu sebentar.','error');
+    return;
+  }
+
+  const key=barcode.toLowerCase();
+
+  if(lastSavedRollId===key){
+    showSearchMessage('Roll ini baru saja di-opname. Silakan scan Roll berikutnya terlebih dahulu.','error');
+    document.getElementById('barcode').value='';
+    document.getElementById('barcode').focus();
+    return;
+  }
+
+  const data=rollDatabase[key];
+
+  if(!data){
+    showMessage('Roll ID "'+barcode+'" tidak ditemukan.','error');
+    return;
+  }
+
+  if(key!==lastSavedRollId){
+    lastSavedRollId='';
+  }
+
+  currentRoll=data;
+  displayRoll(data);
+
+  document.getElementById('barcode').value='';
+  document.getElementById('barcode').focus();
+}
+
+function displayRoll(data) {
+  document.getElementById('rollId').textContent = data['Roll ID'] || '-';
+  // document.getElementById('sku').textContent = data['SKU'] || '-';
+  document.getElementById('design').textContent = data['Kode Desain'] || '-';
+  document.getElementById('product').textContent = data['Nama Produk'] || '-';
+  document.getElementById('color').textContent = data['Warna'] || '-';
+  document.getElementById('width').textContent = data['Lebar'] ? data['Lebar']+' CM' : '-';
+  document.getElementById('gsm').textContent = data['GSM'] ? data['GSM']+' GSM' : '-';
+  document.getElementById('rollNote').textContent = data['Keterangan'] || '-';
+
+  const locationDatabase=data['Location ID']||data['Pallet ID']||'-';
+
+  document.getElementById('rollLocation').textContent=locationDatabase;
+  setLocationActual(locationDatabase);
+
+  const hasMeter=data['Meter']!==''&&data['Meter']!==null;
+  const hasYard=data['Yard']!==''&&data['Yard']!==null;
+  const lengthInput=document.getElementById('actualLength');
+  const unitSelect=document.getElementById('actualUnit');
+
+  unitSelect.disabled=false;
+  unitSelect.value='';
+  lengthInput.value='';
+
+  if(hasMeter&&hasYard){
+    document.getElementById('rollLength').textContent='⚠️ Meter & Yard terisi';
+    unitSelect.disabled=true;
+  }else if(hasMeter){
+    document.getElementById('rollLength').textContent=data['Meter']+' Meter';
+    lengthInput.value=data['Meter'];
+    unitSelect.value='Meter';
+    unitSelect.disabled=true;
+  }else if(hasYard){
+    document.getElementById('rollLength').textContent=data['Yard']+' Yard';
+    lengthInput.value=data['Yard'];
+    unitSelect.value='Yard';
+    unitSelect.disabled=true;
+  }else{
+    document.getElementById('rollLength').textContent='Belum ada panjang';
+  }
+
+  const rollGrade=document.getElementById('rollGrade');
+  const rollStatus=document.getElementById('rollStatus');
+  const grade=String(data['Grade']||'').trim().toUpperCase();
+  const status=String(data['Status']||'').trim().toLowerCase();
+
+  rollGrade.textContent=grade||'-';
+  rollGrade.className='value-badge '+(grade==='A'?'grade-A':grade==='A1'?'grade-A1':grade==='B'?'grade-B':grade==='BS'?'grade-BS':'');
+  rollStatus.textContent=data['Status']||'-';
+  rollStatus.className='value-badge '+(status==='fastmoving'?'status-fastmoving':status==='slowmoving'?'status-slowmoving':status==='returan'?'status-returan':status==='deadstock'?'status-deadstock':'');
+
+  document.getElementById('lastOpname').innerHTML=formatLastOpname(data['Last Opname']);
+
+  const databaseGrade = String(data['Grade'] || '').trim().toUpperCase();
+  const databaseStatus = String(data['Status'] || '').trim();
+  const gradeSelect = document.getElementById('actualGrade');
+  const statusSelect = document.getElementById('actualStatus');
+  const validGrades = ['A','A1','B','BS'];
+  const validStatuses = ['Fastmoving','Slowmoving','Returan','Deadstock'];
+
+  gradeSelect.value = validGrades.includes(databaseGrade) ? databaseGrade : '';
+  statusSelect.value = validStatuses.includes(databaseStatus) ? databaseStatus : '';
+
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('opname').style.display = 'block';
+  document.getElementById('statusBox').style.display = 'none';
+}
+
+function formatLastOpname(value){
+  if(!value)return 'Belum pernah opname';
+
+  const date=new Date(value);
+  if(isNaN(date.getTime()))return value;
+
+  const now=new Date();
+  const diff=Math.floor((now-date)/86400000);
+
+  let relative;
+  if(diff<=0)relative='Hari ini';
+  else if(diff===1)relative='1 hari yang lalu';
+  else if(diff<7)relative=diff+' hari yang lalu';
+  else if(diff<14)relative='1 minggu yang lalu';
+  else if(diff<30)relative=Math.floor(diff/7)+' minggu yang lalu';
+  else if(diff<60)relative='1 bulan yang lalu';
+  else if(diff<365)relative=Math.floor(diff/30)+' bulan yang lalu';
+  else relative=Math.floor(diff/365)+' tahun yang lalu';
+
+  const dateText=date.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})+' '+date.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+
+  return '<b>'+relative+'</b><br><small>'+dateText+'</small>';
+}
+
+function saveOpname() {
+  if (!currentRoll) {
+    showMessage('Belum ada data roll.','error');
+    return;
+  }
+
+  const actualLength = document.getElementById('actualLength').value;
+  const actualGrade = document.getElementById('actualGrade').value;
+  const actualStatus = document.getElementById('actualStatus').value;
+  const actualLocationType = document.getElementById('actualLocationType').value;
+  const actualRack = document.getElementById('actualRack').value;
+  const actualPosition = document.getElementById('actualPosition').value;
+  const actualLevel = document.getElementById('actualLevel').value;
+  const actualLocation = document.getElementById('actualLocation').value;
+  const keterangan = document.getElementById('keterangan').value.trim();
+
+  const hasMeter=currentRoll['Meter']!==''&&currentRoll['Meter']!==null;
+  const hasYard=currentRoll['Yard']!==''&&currentRoll['Yard']!==null;
+  const unit=document.getElementById('actualUnit').value;
+
+  let actualMeter='';
+  let actualYard='';
+
+  if(hasMeter&&!hasYard){
+    actualMeter=actualLength;
+  }else if(hasYard&&!hasMeter){
+    actualYard=actualLength;
+  }else if(!hasMeter&&!hasYard){
+    if(!unit){
+      showMessage('Silakan pilih Satuan.','error');
+      return;
+    }
+    if(unit==='Meter')actualMeter=actualLength;
+    if(unit==='Yard')actualYard=actualLength;
+  }else{
+    showMessage('Data Roll memiliki Meter dan Yard sekaligus. Periksa data terlebih dahulu.','error');
+    return;
+  }
+
+  if (actualLength === '' || actualLength === null) {
+    showMessage('Panjang aktual harus diisi.','error');
+    return;
+  }
+
+  if (!actualGrade) {
+    showMessage('Silakan pilih Grade Aktual.','error');
+    return;
+  }
+
+  if (!actualStatus) {
+    showMessage('Silakan pilih Status Aktual.','error');
+    return;
+  }
+
+  if (!actualLocation) {
+    showMessage('Silakan pilih Location Aktual.','error');
+    return;
+  }
+
+  if (!actualLocationType) {
+    showMessage('Silakan pilih Tipe Location.','error');
+    return;
+  }
+
+  if (actualLocationType === 'Rak') {
+    if (!actualRack || !actualPosition || !actualLevel) {
+      showMessage('Location Rak harus lengkap.','error');
+      return;
+    }
+  }
+
+  if (actualLocationType === 'Pallet' && !actualLocation) {
+    showMessage('Silakan pilih Pallet.','error');
+    return;
+  }
+
+  const saveButton=document.getElementById('saveButton');
+  saveButton.disabled=true;
+  saveButton.textContent='⏳ MENYIMPAN...';
+
+  const token=localStorage.getItem('warehouseToken');
+
+  google.script.run
+    .withSuccessHandler(function(response) {
+      saveButton.disabled = false;
+      saveButton.textContent = '💾 SIMPAN OPNAME';
+
+      if (!response.success){
+        playErrorSound();
+        showMessage(response.message,'error');
+        return;
+      }
+
+      const statusBox = document.getElementById('statusBox');
+      statusBox.style.display = 'block';
+
+      if (response.keterangan === 'Sesuai' && !response.statusChanged) {
+        statusBox.className = 'status-box status-sesuai';
+        statusBox.innerHTML = '✓ DATA SESUAI<br><small>Status: ' + response.actualStatus + '</small>';
+      } else {
+        statusBox.className = 'status-box status-berubah';
+        let detail = response.keterangan;
+
+        if (response.statusChanged) {
+          detail += '<br>Status: ' + response.databaseStatus + ' → ' + response.actualStatus;
+        }
+
+        statusBox.innerHTML = '✓ OPNAME TERSIMPAN<br><small>' + detail + '</small>';
+      }
+
+      showSaveMessage('Stock Opname berhasil disimpan.','success');
+      playSuccessSound();
+
+      const savedRollId=String(currentRoll['Roll ID']||'').trim().toLowerCase();
+      lastSavedRollId=savedRollId;
+
+      if(savedRollId&&rollDatabase[savedRollId]){
+        rollDatabase[savedRollId]['Meter']=response.actualMeter;
+        rollDatabase[savedRollId]['Yard']=response.actualYard;
+        rollDatabase[savedRollId]['Grade']=response.actualGrade;
+        rollDatabase[savedRollId]['Status']=response.actualStatus;
+        rollDatabase[savedRollId]['Location ID']=response.actualLocation;
+        rollDatabase[savedRollId]['Last Opname']=new Date().toISOString();
+        rollDatabase[savedRollId]['Keterangan']=response.actualKeterangan;
+      }
+
+      currentRoll = null;
+
+      // Kosongkan barcode
+      document.getElementById('barcode').value = '';
+
+      // Sembunyikan data roll & form opname
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('opname').style.display = 'none';
+
+      // Reset input opname
+      document.getElementById('actualLength').value = '';
+      document.getElementById('actualUnit').value='';
+      document.getElementById('actualUnit').disabled=false;
+      document.getElementById('actualGrade').value = '';
+      document.getElementById('actualStatus').value = '';
+      document.getElementById('keterangan').value = '';
+
+      // Reset location
+      document.getElementById('actualLocationType').value = '';
+      document.getElementById('actualRack').innerHTML = '<option value="">Rack</option>';
+      document.getElementById('actualPosition').innerHTML = '<option value="">Posisi</option>';
+      document.getElementById('actualLevel').innerHTML = '<option value="">Level</option>';
+      document.getElementById('locationBarcode').value = '';
+      document.getElementById('actualLocation').value = '';
+
+      // Siapkan input untuk Roll berikutnya
+      const barcodeInput = document.getElementById('barcode');
+
+      setTimeout(function() {
+        barcodeInput.value = '';
+        barcodeInput.focus();
+      }, 100);
+    })
+    .withFailureHandler(function(error) {
+      saveButton.disabled = false;
+      saveButton.textContent = '💾 SIMPAN OPNAME';
+      showMessage('Terjadi error: ' + error.message,'error');
+    })
+    .saveStockOpname(
+      currentRoll['Roll ID'],
+      actualMeter,
+      actualYard,
+      actualGrade,
+      actualStatus,
+      actualLocation,
+      keterangan,
+      token
+    );
+}
+
+function showMessage(message,type) {
+  const el = document.getElementById('message');
+  el.textContent = message;
+  el.className = type === 'error' ? 'error' : 'success';
+  el.style.display = 'block';
+}
+
+function hideMessage(){
+  const el=document.getElementById('message');
+  el.style.display='none';
+  el.textContent='';
+  el.className='';
+}
+
+function clearMessages(){
+  // Bersihkan pesan pencarian
+  hideSearchMessage();
+
+  // Bersihkan pesan error/success penyimpanan
+  hideMessage();
+
+  // Bersihkan pesan success setelah simpan
+  const saveMessage=document.getElementById('saveMessage');
+  saveMessage.style.display='none';
+  saveMessage.textContent='';
+
+  clearTimeout(window.saveMessageTimer);
+}
+
+function showSaveMessage(text){
+  const el=document.getElementById('saveMessage');
+  el.textContent=text;
+  el.style.display='block';
+  clearTimeout(window.saveMessageTimer);
+  window.saveMessageTimer=setTimeout(function(){
+    el.style.display='none';
+  },3000);
+}
+
+function showSearchMessage(message,type){
+  const el=document.getElementById('searchMessage');
+  el.textContent=message;
+  el.className=type==='error'?'error':'success';
+  el.style.display='block';
+}
+
+function hideSearchMessage(){
+  document.getElementById('searchMessage').style.display='none';
+}
+
+loadLocations();
+loadRollDatabase();
+
+window.addEventListener('load', function() {
+  const barcode = document.getElementById('barcode');
+  if (barcode) barcode.focus();
+});
+
+document.getElementById('barcode').addEventListener('input',function(){
+  clearMessages();
+});
+
+
+['actualLength','actualUnit','actualGrade','actualStatus',
+ 'actualLocationType','actualRack','actualPosition','actualLevel',
+ 'locationBarcode','keterangan'].forEach(function(id){
+  const el=document.getElementById(id);
+
+  el.addEventListener('input',clearMessages);
+  el.addEventListener('change',clearMessages);
+});
+
+</script>
+</body>
+</html>
