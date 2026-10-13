@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Potong Sampel</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif!important;background:#f5f5f5;color:#222}
+    .container{max-width:900px;margin:30px auto;padding:20px}
+    .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .section-title{font-size:17px;font-weight:bold;margin-bottom:15px}
+    .section-note{font-size:13px;color:#888;margin-top:-8px;margin-bottom:16px}
+    .label{font-size:13px;font-weight:bold;margin-bottom:6px}
+    .required{font-size:11px;font-weight:bold;color:#b02a37;background:#f8d7da;padding:3px 7px;border-radius:5px;margin-left:5px}
+    .scan-row{display:flex;gap:8px}
+
+    h2{margin:0 0 20px}
+    input,select,textarea{width:100%;padding:13px;border:1px solid #ccc;border-radius:8px;background:#fff}
+    textarea{font-family:Arial,sans-serif;resize:vertical;min-height:90px}
+    button{border:0;border-radius:9px;padding:0 16px;font-size:16px;font-weight:bold;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}
+
+    .btn-scan{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#AD2020;color:#fff;padding:0 16px;}
+    .btn-search{background:#e9ecef;color:#222;height:44px;padding:0 16px;}
+    .btn-save{width:100%;background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#198754;color:#fff;height:44px;padding:0 16px;}
+
+    .message{display:none;padding:12px 15px;border-radius:8px;margin-bottom:15px;font-size:14px}
+    .success{background:#d9ead3;color:#38761d}
+    .error{background:#fdeaea;color:#a52222}
+    .loading{background:#fff3cd;color:#856404}
+
+    .result-card{background:#f1f3f5;border:2px solid #AD2020}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .info-item{padding:10px 4px}
+    .info-label{font-size:12px;color:#777;margin-bottom:5px}
+    .info-value{font-size:15px;font-weight:600;word-break:break-word}
+
+    .length-box{margin-top:10px;padding:12px;border-radius:8px;background:#fff;border:1px solid #ddd}
+    .length-row{display:flex;justify-content:space-between;align-items:center}
+    .length-label{font-size:13px;color:#777}
+    .length-value{font-size:18px;font-weight:bold}
+    .input-group{margin-bottom:15px}
+    .length-input{display:flex;gap:8px}
+    .length-input input{flex:1}
+    .length-input select{width:110px}
+
+    .cut-message{display:none;padding:12px 15px;border-radius:8px;margin-top:10px;font-size:14px}
+    .cut-message.error{display:block;background:#fdeaea;color:#a52222}
+    .cut-message.success{display:block;background:#d9ead3;color:#38761d}
+
+    @media(max-width:600px){
+      .container{margin:10px auto;padding:12px}
+      .info-grid{grid-template-columns:1fr 1fr}
+      .length-input select{width:100px}
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+  window.headerTitle='Potong Sampel';
+  </script>
+  <?!= include('header'); ?>
+
+  <div class="container">
+    <div class="card">
+      <h2>✂️ Potong Sampel</h2>
+      <div class="section-note">Cari atau scan Roll yang akan dipotong untuk kebutuhan sampel.</div>
+
+      <div class="input-group">
+        <div class="label">Roll ID</div>
+        <div class="scan-row">
+          <input id="rollInput" type="text" placeholder="Masukkan Roll ID">
+          <button class="btn-scan" onclick="openRollScanner()">📷 SCAN</button>
+        </div>
+      </div>
+
+      <button class="btn-search" style="width:100%" onclick="searchRoll()">🔍 CARI ROLL</button>
+    </div>
+    
+    <div id="message" class="message"></div>
+
+    <div class="card result-card" id="rollInfo" style="display:none">
+      <div class="section-title">✓ INFORMASI ROLL</div>
+      <div class="section-note">Pastikan Roll yang dipilih sudah sesuai sebelum melakukan pemotongan.</div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Roll ID</div>
+          <div class="info-value" id="rollId"></div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Nama Produk</div>
+          <div class="info-value" id="product"></div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Warna</div>
+          <div class="info-value" id="color"></div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Grade</div>
+          <div class="info-value" id="grade"></div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Location</div>
+          <div class="info-value" id="location"></div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Panjang Saat Ini</div>
+          <div class="info-value" id="length"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="cutInfo" style="display:none">
+      <div class="section-title">✂️ Detail Pemotongan</div>
+      <div class="section-note">Masukkan panjang kain yang akan dipotong.</div>
+
+      <div class="input-group">
+        <div class="label">Jumlah Potong <span class="required">WAJIB</span></div>
+        <div class="length-input">
+          <input id="cutInput" type="number" min="0.01" step="0.01" placeholder="Masukkan panjang yang dipotong">
+          <select id="cutUnit" disabled>
+            <option value="">-</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <div class="label">Keterangan <span class="required">WAJIB</span></div>
+        <textarea id="keterangan" placeholder="Contoh: Sampel customer"></textarea>
+        <div id="keteranganMessage" class="cut-message"></div>
+      </div>
+
+      <div id="cutMessage" class="cut-message"></div>
+
+      <button class="btn-save" id="cutButton" onclick="saveCut()">✂️ POTONG SAMPEL</button>
+    </div>
+
+  </div>
+
+  <script>
+  let currentRoll=null;
+
+  function showMessage(text,type){
+    const el=document.getElementById('message');
+    el.textContent=text;
+    el.className='message '+type;
+    el.style.display='block';
+    clearTimeout(window.messageTimer);
+    window.messageTimer=setTimeout(function(){el.style.display='none'},4000);
+  }
+
+  function searchRoll(){
+    const rollId=document.getElementById('rollInput').value.trim();
+    if(!rollId){
+      showMessage('Roll ID harus diisi.','error');
+      return;
+    }
+
+    showMessage('⏳ Memuat data Roll...','loading');
+    document.getElementById('rollInfo').style.display='none';
+    document.getElementById('cutInfo').style.display='none';
+    currentRoll=null;
+
+    google.script.run
+      .withSuccessHandler(function(response){
+        if(!response||!response.success){
+          showMessage(response?response.message:'Roll tidak ditemukan.','error');
+          return;
+        }
+
+        currentRoll=response.data;
+
+        document.getElementById('rollId').textContent=currentRoll['Roll ID'];
+        document.getElementById('product').textContent=currentRoll['Nama Produk']||'-';
+        document.getElementById('color').textContent=currentRoll['Warna']||'-';
+        document.getElementById('grade').textContent=currentRoll['Grade']||'-';
+        document.getElementById('location').textContent=currentRoll['Location ID']||'-';
+
+        const unitSelect=document.getElementById('cutUnit');
+
+        if(currentRoll['Meter']!==''){
+          document.getElementById('length').textContent=currentRoll['Meter']+' Meter';
+          unitSelect.innerHTML='<option value="Meter">Meter</option>';
+        }else if(currentRoll['Yard']!==''){
+          document.getElementById('length').textContent=currentRoll['Yard']+' Yard';
+          unitSelect.innerHTML='<option value="Yard">Yard</option>';
+        }else{
+          document.getElementById('length').textContent='-';
+          unitSelect.innerHTML='<option value="">-</option>';
+        }
+
+        document.getElementById('cutInput').value='';
+        document.getElementById('keterangan').value='';
+        document.getElementById('keteranganMessage').className='cut-message';
+        document.getElementById('cutMessage').className='cut-message';
+
+        document.getElementById('rollInfo').style.display='block';
+        document.getElementById('cutInfo').style.display='block';
+
+        showMessage('✓ Roll ditemukan.','success');
+      })
+      .withFailureHandler(function(error){
+        showMessage('Terjadi error: '+error.message,'error');
+      })
+      .getRollForSampleCut(rollId);
+  }
+
+  function saveCut(){
+    if(!currentRoll){
+      showMessage('Cari Roll terlebih dahulu.','error');
+      return;
+    }
+
+    const cut=Number(document.getElementById('cutInput').value);
+    const keterangan=document.getElementById('keterangan').value.trim();
+
+    if(!cut||cut<=0){
+      const el=document.getElementById('cutMessage');
+      el.textContent='Jumlah potong harus lebih dari 0.';
+      el.className='cut-message error';
+      document.getElementById('cutInput').focus();
+      return;
+    }
+
+    if(!keterangan){
+      const el=document.getElementById('keteranganMessage');
+      el.textContent='Keterangan wajib diisi.';
+      el.className='cut-message error';
+      document.getElementById('keterangan').focus();
+      return;
+    }
+
+    document.getElementById('keteranganMessage').className='cut-message';
+    document.getElementById('cutMessage').className='cut-message';
+
+    const button=document.getElementById('cutButton');
+    button.disabled=true;
+    button.textContent='⏳ MEMPROSES...';
+
+    const token=localStorage.getItem('warehouseToken');
+
+    google.script.run
+      .withSuccessHandler(function(response){
+        button.disabled=false;
+        button.textContent='✂️ POTONG SAMPEL';
+
+        if(!response||!response.success){
+          const el=document.getElementById('cutMessage');
+          el.textContent=response?response.message:'Gagal memotong sampel.';
+          el.className='cut-message error';
+          return;
+        }
+
+        const unit=response.unit;
+        const message='✓ Potong sampel berhasil. Sisa '+response.sesudah+' '+unit+'.';
+
+        document.getElementById('cutInput').value='';
+        document.getElementById('keterangan').value='';
+        document.getElementById('rollInput').value='';
+        currentRoll=null;
+
+        document.getElementById('rollInfo').style.display='none';
+        document.getElementById('cutInfo').style.display='none';
+
+        showMessage(message,'success');
+      })
+      .withFailureHandler(function(error){
+        button.disabled=false;
+        button.textContent='✂️ POTONG SAMPEL';
+
+        const el=document.getElementById('cutMessage');
+        el.textContent='Terjadi error: '+error.message;
+        el.className='cut-message error';
+      })
+      .saveSampleCut(currentRoll['Roll ID'],cut,keterangan,token);
+  }
+
+  function openRollScanner(){
+    const win=window.open('','_blank');
+    if(!win){
+      showMessage('Browser memblokir popup. Izinkan popup untuk halaman ini.','error');
+      return;
+    }
+
+    const html='<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Scan Roll</title><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"><\/script><style>body{margin:0;padding:15px;font-family:Arial;background:#111;color:white;text-align:center}#qr-reader{width:100%;max-width:450px;margin:20px auto}</style></head><body><h2>Scan Roll</h2><div id="qr-reader"></div><script>var scanned=false;var scanner=new Html5QrcodeScanner("qr-reader",{fps:15,qrbox:{width:280,height:280},rememberLastUsedCamera:true,videoConstraints:{facingMode:"environment"},supportedScanTypes:[Html5QrcodeScanType.SCAN_TYPE_CAMERA],formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE,Html5QrcodeSupportedFormats.CODE_128]},false);scanner.render(function(d){if(scanned)return;scanned=true;try{scanner.clear()}catch(e){}try{window.opener.postMessage({type:"sample-cut-roll-scanned",value:d},"*")}catch(e){}setTimeout(function(){window.close()},300)},function(){});<\/script></body></html>';
+
+    win.document.write(html);
+    win.document.close();
+  }
+
+  window.addEventListener('message',function(e){
+    if(e.data&&e.data.type==='sample-cut-roll-scanned'&&e.data.value){
+      document.getElementById('rollInput').value=e.data.value.trim();
+      searchRoll();
+    }
+  });
+
+  document.getElementById('rollInput').addEventListener('keydown',function(e){
+    if(e.key==='Enter'){
+      e.preventDefault();
+      searchRoll();
+    }
+  });
+  </script>
+</body>
+</html>
