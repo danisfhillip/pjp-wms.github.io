@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif !important;background:#f5f5f5;color:#222}
+    h3{margin:0 0 5px}
+    .container{max-width:900px;margin:30px auto;padding:20px}
+    .card{background:white;border-radius:14px;padding:18px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+    .header-side{width:38px;height:38px}
+    .header-title{text-align:center;flex:1}
+    .header-title h1{margin:0;font-size:20px;text-transform:uppercase}
+    .header-title p{margin:4px 0 0;color:#888;font-size:12px}
+    .header-icon{width:38px;height:38px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px}
+    .section-title{font-size:15px;font-weight:bold;margin:0 0 12px;text-transform:uppercase;letter-spacing:.3px}
+    .transaction,.menu{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .menu-card{background:#fff;border-radius:14px;padding:17px 14px;text-align:left;text-decoration:none;color:#222;border:1px solid #e5e5e5;min-height:120px;transition:.2s;display:flex;flex-direction:column;justify-content:center}
+    .menu-card:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,.08);border-color:#AD2020}
+    .menu-card.primary,.menu-card.dashboard{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#AD2020;color:white;border:none}
+    .menu-card.dashboard{grid-column:1/-1;min-height:95px;flex-direction:row;align-items:center;gap:16px}
+    .icon{width:42px;height:42px;border-radius:50%;background:#f1f1f1;display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:12px}
+    .primary .icon,.dashboard .icon{background:rgba(255,255,255,.15)}
+    .dashboard .icon{margin:0}
+    .menu-card p{margin:0;color:#777;font-size:11px;line-height:1.4}
+    .primary p,.dashboard p{color:rgba(255,255,255,.75)}
+    .tools .menu-card{min-height:90px}
+    
+    @media(max-width:600px){.container{margin:10px auto;padding:12px}}
+  </style>
+</head>
+<body>
+
+<?!= include('login'); ?>
+
+<div class="container">
+  <div class="header">
+    <div class="header-title">
+      <h1>Warehouse System</h1>
+      <p>Padajaya Pelita</p>
+    </div>
+  </div>
+
+  <div class="card" id="transactionSection">
+    <div class="section-title">Transaksi</div>
+    <div class="transaction">
+      <a class="menu-card primary" data-permission="Receiving" href="#" onclick="openPage('receiving');return false;">
+        <div>
+          <div class="icon">📦</div>
+          <h3>Barang Masuk</h3>
+        </div>
+        <p>Tambah Roll baru ke database</p>
+      </a>
+      <a class="menu-card primary" data-permission="Outbound" href="#" onclick="openPage('outbound');return false;">
+        <div class="icon">📤</div>
+        <h3>Barang Keluar</h3>
+        <p>Proses kain keluar gudang</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="card" id="operationalSection">
+    <div class="section-title">Operasional</div>
+    <div class="menu">
+      <a class="menu-card dashboard" data-permission="Dashboard" href="#" onclick="openPage('dashboard');return false;">
+        <div class="icon">📊</div>
+        <div>
+          <h3>Dashboard Gudang</h3>
+          <p>Ringkasan kondisi dan aktivitas gudang</p>
+        </div>
+      </a>
+      <a class="menu-card" data-permission="Stock" href="#" onclick="openPage('stock');return false;">
+        <div class="icon">📦</div>
+        <h3>Cek Stok</h3>
+        <p>Lihat stok Roll yang tersedia</p>
+      </a>
+      <a class="menu-card" data-permission="Opname" href="#" onclick="openPage('scanner');return false;">
+        <div class="icon">📷</div>
+        <h3>Stock Opname</h3>
+        <p>Scan dan update data Roll</p>
+      </a>
+      <a class="menu-card" data-permission="Sample Cut" href="#" onclick="openPage('sample_cut');return false;">
+        <div class="icon">✂️</div>
+        <h3>Potong Sampel</h3>
+        <p>Potong kain untuk sampel</p>
+      </a>
+      <a class="menu-card" data-permission="Movement" href="#" onclick="openPage('movement');return false;">
+        <div class="icon">🔄</div>
+        <h3>Pergerakan Roll</h3>
+        <p>Pindahkan Roll ke lokasi lain</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="card" id="toolsSection">
+    <div class="section-title">Tools</div>
+    <div class="menu tools">
+      <a class="menu-card" data-permission="Barcode" href="#" onclick="openPage('barcode');return false;">
+        <div class="icon">🏷️</div>
+        <h3>Print Barcode</h3>
+        <p>Cetak label barcode Roll</p>
+      </a>
+      <a class="menu-card" data-permission="Location" href="#" onclick="openPage('location');return false;">
+        <div class="icon">📍</div>
+        <h3>QR Location</h3>
+        <p>Generate QR Rak & Pallet</p>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+window.webAppUrl='<?!= webAppUrl ?>';
+window.embedMode=new URLSearchParams(window.location.search).get('embed')==='1';
+
+function openPage(page){
+  const url=window.webAppUrl+'?page='+encodeURIComponent(page)+(window.embedMode?'&embed=1':'');
+
+  if(window.embedMode){
+    window.location.href=url;
+  }else{
+    window.top.location.href=url;
+  }
+}
+
+function applyPermissions(permissions){
+  document.querySelectorAll('[data-permission]').forEach(function(item){
+    const feature=item.getAttribute('data-permission');
+    item.style.display=permissions&&permissions[feature]===true?'':'none';
+  });
+  document.querySelectorAll('.card[id$="Section"]').forEach(function(section){
+    const items=section.querySelectorAll('[data-permission]');
+    let visible=false;
+    items.forEach(function(item){
+      if(item.style.display!=='none')visible=true;
+    });
+    section.style.display=visible?'':'none';
+  });
+}
+</script>
+</body>
+</html>
