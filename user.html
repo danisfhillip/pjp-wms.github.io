@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:#f5f5f5;color:#222}
+    .container{max-width:1400px;margin:25px auto;padding:20px}
+    .header{display:flex;align-items:center;gap:15px;margin-bottom:22px;background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+    .back{border:0;background:#111;color:#fff;border-radius:8px;padding:10px 14px;cursor:pointer;font-size:15px}
+
+    .manage-card{background:#fff;border-radius:14px;padding:20px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+    .manage-top{display:flex;align-items:center;gap:15px}
+    .header-title{flex:1}
+    .header-title h1{margin:0;font-size:21px}
+    .header-title p{margin:4px 0 0;color:#888;font-size:12px}
+    .toolbar{margin-top:18px;padding:0;display:flex;align-items:center;gap:10px}
+
+    .add-button{border:0;background:#AD2020;color:#fff;border-radius:8px;padding:11px 15px;font-weight:bold;cursor:pointer}
+    .search{width:100%;padding:11px 13px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none}
+    .search:focus{border-color:#AD2020}
+    .user-count{white-space:nowrap;color:#888;font-size:12px}
+    .table-box{background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.07);overflow:auto}
+    table{width:100%;border-collapse:collapse;min-width:1050px;font-size:12px}
+    th{background:#f7f7f7;color:#777;font-size:11px;text-transform:uppercase;letter-spacing:.2px;font-weight:bold;padding:13px 10px;text-align:center;border-bottom:1px solid #eee;white-space:nowrap}
+    td{padding:12px 10px;border-bottom:1px solid #eee;text-align:center;white-space:nowrap}
+    tbody tr:last-child td{border-bottom:0}
+    tbody tr:hover{background:#fafafa}
+    th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:2}
+    th:first-child{background:#f7f7f7;z-index:3}
+    .user-id{font-weight:bold;font-size:13px}
+    .pin{display:inline-flex;align-items:center;gap:4px;background:#eaf7ea;color:#277227;padding:5px 8px;border-radius:20px;font-size:10px}
+    .yes{font-size:15px;font-weight:bold;color:#258025}
+    .no{color:#ccc}
+    .admin.yes{background:#111;color:#fff;border-radius:5px;padding:3px 7px;font-size:11px}
+    .actions{display:flex;justify-content:center;gap:5px}
+    .action{border:0;border-radius:6px;padding:7px 9px;cursor:pointer;font-size:11px}
+    .edit{background:#eee;color:#222}
+    .reset{background:#f8eaea;color:#9b2020}
+    .delete{background:#111;color:#fff}
+    .status-active{display:inline-block;background:#eaf7ea;color:#277227;padding:5px 8px;border-radius:20px;font-size:10px;font-weight:bold}
+    .status-disabled{display:inline-block;background:#f8eaea;color:#9b2020;padding:5px 8px;border-radius:20px;font-size:10px;font-weight:bold}
+    .empty,.loading{text-align:center;color:#888;padding:40px}
+    #message{display:none;padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px}
+    #message.error{display:block;background:#fdeaea;color:#a02020}
+    #message.success{display:block;background:#e8f7e8;color:#216b21}
+    #modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:9999}
+    .modal-card{width:100%;max-width:450px;background:#fff;border-radius:16px;padding:22px}
+    .modal-title{font-size:18px;font-weight:bold;margin-bottom:18px}
+    .field{margin-bottom:14px}
+    .label{font-size:12px;font-weight:bold;margin-bottom:6px}
+    .input{width:100%;padding:11px;border:1px solid #ccc;border-radius:8px;font-size:14px;outline:none}
+    .input:focus{border-color:#AD2020}
+    .permissions-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .check{display:flex;align-items:center;gap:7px;font-size:13px;background:#f7f7f7;padding:9px;border-radius:7px}
+    .modal-actions{display:flex;gap:8px;margin-top:18px}
+    .modal-actions button{flex:1;border:0;border-radius:8px;padding:11px;cursor:pointer;font-weight:bold}
+    .cancel{background:#eee}
+    .save{background:#AD2020;color:#fff}
+    @media(max-width:600px){
+      .container{margin:10px auto;padding:12px}
+      .header-title h1{font-size:18px}
+      .header{gap:10px}
+      .toolbar{padding:10px}
+      .user-count{display:none}
+    }
+  </style>
+</head>
+<body>
+<script>
+window.headerTitle='Manage User';
+</script>
+<?!= include('header'); ?>
+
+<div class="container">
+  <div class="manage-card">
+    <div class="manage-top">
+      <div class="header-title">
+        <h1>Manage User</h1>
+        <p>Kelola akun dan akses pengguna</p>
+      </div>
+      <button class="add-button" onclick="openAdd()">+ Tambah User</button>
+    </div>
+
+    <div class="toolbar">
+      <input class="search" id="search" placeholder="🔍  Cari ID user..." oninput="renderUsers()">
+      <div class="user-count" id="userCount">0 user</div>
+    </div>
+  </div>
+
+  <div id="message"></div>
+
+  <div class="table-box">
+    <div id="userList" class="loading">Memuat user...</div>
+  </div>
+</div>
+
+<div id="modal">
+  <div class="modal-card">
+    <div class="modal-title" id="modalTitle">Tambah User</div>
+    <div class="field">
+      <div class="label">ID USER</div>
+      <input class="input" id="userId" placeholder="Contoh: PJP.Operator">
+    </div>
+    <div class="field" id="pinField">
+      <div class="label">PIN</div>
+      <input class="input" id="userPin" type="password" inputmode="numeric" placeholder="Minimal 4 digit">
+    </div>
+    <div class="field">
+      <div class="label">PERMISSION</div>
+      <div class="permissions-grid" id="permissions"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="cancel" onclick="closeModal()">BATAL</button>
+      <button class="save" onclick="saveUser()">SIMPAN</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let users=[];
+let editMode=false;
+const permissionList=['Dashboard','Stock','Opname','Movement','Sample Cut','Receiving','Outbound','Barcode','Location','Admin'];
+
+function getToken(){
+  return localStorage.getItem('warehouseToken');
+}
+
+function showMessage(message,type){
+  const box=document.getElementById('message');
+  box.textContent=message;
+  box.className=type||'error';
+}
+
+function loadUsers(){
+  document.getElementById('userList').innerHTML='<div class="loading">Memuat user...</div>';
+  google.script.run
+    .withSuccessHandler(function(result){
+      if(!result.success){
+        showMessage(result.message,'error');
+        document.getElementById('userList').innerHTML='';
+        return;
+      }
+      users=result.users||[];
+      renderUsers();
+    })
+    .withFailureHandler(function(error){
+      showMessage('Terjadi error: '+error.message,'error');
+      document.getElementById('userList').innerHTML='';
+    })
+    .getUsers(getToken());
+}
+
+function renderUsers(){
+  const box=document.getElementById('userList');
+  const search=document.getElementById('search').value.trim().toLowerCase();
+  const filtered=users.filter(function(user){
+    return user.userId.toLowerCase().includes(search);
+  });
+  document.getElementById('userCount').textContent=filtered.length+' user';
+  if(!filtered.length){
+    box.innerHTML='<div class="empty">User tidak ditemukan.</div>';
+    return;
+  }
+  const rows=filtered.map(function(user){
+    return '<tr>'+
+      '<td><div class="user-id">'+escapeHtml(user.userId)+'</div></td>'+
+      '<td><span class="pin">'+(user.hasPin?'● Aktif':'○ Belum')+'</span></td>'+
+      '<td>'+statusCell(user)+'</td>'+
+      permissionCell(user,'Dashboard')+
+      permissionCell(user,'Stock')+
+      permissionCell(user,'Opname')+
+      permissionCell(user,'Movement')+
+      permissionCell(user,'Sample Cut')+
+      permissionCell(user,'Receiving')+
+      permissionCell(user,'Outbound')+
+      permissionCell(user,'Barcode')+
+      permissionCell(user,'Location')+
+      permissionCell(user,'Admin')+
+      '<td><div class="actions">'+
+        '<button class="action edit" onclick="openEdit(\''+escapeJs(user.userId)+'\')">Edit</button>'+
+        '<button class="action reset" onclick="resetPin(\''+escapeJs(user.userId)+'\')">Reset</button>'+
+        '<button class="action '+(String(user.status||'Aktif').toLowerCase()==='aktif'?'delete':'edit')+'" onclick="toggleUserStatus(\''+escapeJs(user.userId)+'\',\''+(String(user.status||'Aktif').toLowerCase()==='aktif'?'Nonaktif':'Aktif')+'\')">'+(String(user.status||'Aktif').toLowerCase()==='aktif'?'Nonaktifkan':'Aktifkan')+'</button>'+
+      '</div></td>'+
+    '</tr>';
+  }).join('');
+  box.innerHTML='<table>'+
+    '<thead><tr>'+
+      '<th>ID User</th><th>PIN</th><th>Status</th><th>Dashboard</th><th>Stock</th><th>Opname</th><th>Movement</th><th>Sample Cut</th><th>Receiving</th><th>Outbound</th><th>Barcode</th><th>Location</th><th>Admin</th><th>Aksi</th>'+
+    '</tr></thead>'+
+    '<tbody>'+rows+'</tbody>'+
+  '</table>';
+}
+
+function permissionCell(user,name){
+  const active=user.permissions[name]===true;
+  const cls=name==='Admin'&&active?'yes admin':active?'yes':'no';
+  return '<td><span class="'+cls+'">'+(active?'✓':'—')+'</span></td>';
+}
+
+function statusCell(user){
+  const active=String(user.status||'Aktif').toLowerCase()==='aktif';
+  return '<span class="'+(active?'status-active':'status-disabled')+'">'+(active?'Aktif':'Nonaktif')+'</span>';
+}
+
+function openAdd(){
+  editMode=false;
+  document.getElementById('modalTitle').textContent='Tambah User';
+  document.getElementById('userId').value='';
+  document.getElementById('userId').disabled=false;
+  document.getElementById('userPin').value='';
+  document.getElementById('pinField').style.display='block';
+  renderPermissions({});
+  document.getElementById('modal').style.display='flex';
+}
+
+function openEdit(userId){
+  const user=users.find(function(item){return item.userId===userId;});
+  if(!user)return;
+  editMode=true;
+  document.getElementById('modalTitle').textContent='Edit User';
+  document.getElementById('userId').value=user.userId;
+  document.getElementById('userId').disabled=true;
+  document.getElementById('userPin').value='';
+  document.getElementById('pinField').style.display='none';
+  renderPermissions(user.permissions);
+  document.getElementById('modal').style.display='flex';
+}
+
+function renderPermissions(current){
+  document.getElementById('permissions').innerHTML=permissionList.map(function(p){
+    return '<label class="check"><input type="checkbox" data-permission="'+p+'" '+(current[p]===true?'checked':'')+'> '+p+'</label>';
+  }).join('');
+}
+
+function getPermissions(){
+  const permissions={};
+  document.querySelectorAll('#permissions input[data-permission]').forEach(function(input){
+    permissions[input.getAttribute('data-permission')]=input.checked;
+  });
+  return permissions;
+}
+
+function saveUser(){
+  const userId=document.getElementById('userId').value.trim();
+  const pin=document.getElementById('userPin').value.trim();
+  const permissions=getPermissions();
+  if(!userId){alert('ID wajib diisi.');return;}
+  if(!editMode&&!pin){alert('PIN wajib diisi.');return;}
+  const callback=function(result){
+    if(!result.success){alert(result.message);return;}
+    closeModal();
+    showMessage(result.message,'success');
+    loadUsers();
+  };
+  if(editMode){
+    google.script.run.withSuccessHandler(callback).withFailureHandler(function(error){
+      alert(error.message);
+    }).updateUser(getToken(),userId,permissions);
+  }else{
+    google.script.run.withSuccessHandler(callback).withFailureHandler(function(error){
+      alert(error.message);
+    }).addUser(getToken(),userId,pin,permissions);
+  }
+}
+
+function resetPin(userId){
+  const pin=prompt('Masukkan PIN baru untuk '+userId+':');
+  if(pin===null)return;
+  if(String(pin).length<4){
+    alert('PIN minimal 4 digit.');
+    return;
+  }
+  google.script.run.withSuccessHandler(function(result){
+    if(!result.success){alert(result.message);return;}
+    showMessage(result.message,'success');
+    loadUsers();
+  }).withFailureHandler(function(error){
+    alert(error.message);
+  }).resetUserPin(getToken(),userId,pin);
+}
+
+function toggleUserStatus(userId,status){
+  const action=status==='Aktif'?'mengaktifkan':'menonaktifkan';
+  if(!confirm('Yakin ingin '+action+' user "'+userId+'"?'))return;
+  google.script.run.withSuccessHandler(function(result){
+    if(!result.success){alert(result.message);return;}
+    showMessage(result.message,'success');
+    loadUsers();
+  }).withFailureHandler(function(error){
+    alert(error.message);
+  }).setUserStatus(getToken(),userId,status);
+}
+
+function closeModal(){
+  document.getElementById('modal').style.display='none';
+}
+
+// function goHome(){
+//   google.script.run.withSuccessHandler(function(url){
+//     window.top.location.href=url+'?page=home&_='+Date.now();
+//   }).getWebAppUrl();
+// }
+
+function escapeHtml(value){
+  return String(value).replace(/[&<>"']/g,function(char){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];
+  });
+}
+
+function escapeJs(value){
+  return String(value).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
+
+loadUsers();
+</script>
+</body>
+</html>
