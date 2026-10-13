@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif!important;background:#f5f5f5;color:#222}
+    .container{max-width:900px;margin:30px auto;padding:20px}
+    .card{background:white;border-radius:12px;padding:20px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .header-row{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px}
+    h2{margin:0}
+    .subtitle{font-size:13px;color:#777;margin-top:5px}
+    .btn{border:0;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:bold;cursor:pointer}
+    .btn-primary{background:#222;color:white}
+    .btn-secondary{background:#eee;color:#222}
+    .btn-edit{background:#f1f3f5;color:#333}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .search-row{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:15px}
+    input{width:100%;padding:11px 12px;border:1px solid #ccc;border-radius:7px;font-size:14px}
+    input:focus{outline:none;border-color:#198754}
+    .count{font-size:13px;color:#777;display:flex;align-items:center}
+    .rack-list{border:1px solid #ddd;border-radius:8px;overflow:hidden}
+    .rack-item{display:grid;grid-template-columns:1fr 130px 130px 150px;align-items:center;padding:14px;gap:10px;border-bottom:1px solid #eee}
+    .rack-item:last-child{border-bottom:0}
+    .rack-name{font-size:15px;font-weight:bold}
+    .rack-meta{font-size:12px;color:#777;margin-top:4px}
+    .rack-stat{text-align:center;font-size:13px}
+    .rack-stat strong{display:block;font-size:15px;color:#222}
+    .rack-actions{display:flex;justify-content:flex-end;gap:6px}
+    .empty{text-align:center;padding:35px 15px;color:#888;font-size:14px}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:999}
+    .modal.show{display:flex}
+    .modal-card{background:white;width:100%;max-width:600px;border-radius:12px;padding:20px;max-height:90vh;overflow-y:auto}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .modal-header h3{margin:0}
+    .close{border:0;background:none;font-size:25px;cursor:pointer;color:#777}
+    .input-group{margin-bottom:15px}
+    .label{font-size:13px;font-weight:bold;margin-bottom:6px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .level-options{display:flex;gap:8px}
+    .level-option{flex:1;border:1px solid #ccc;border-radius:7px;padding:10px;text-align:center;cursor:pointer;font-size:13px}
+    .level-option input{width:auto;margin-right:4px}
+    .preview-box{background:#f8f9fa;border:1px solid #ddd;border-radius:8px;padding:12px;margin-bottom:15px}
+    .preview-title{font-size:12px;font-weight:bold;color:#777;margin-bottom:8px}
+    #previewLocation{font-family:monospace;font-size:12px;line-height:1.8;max-height:150px;overflow-y:auto}
+    .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}
+    #message{margin-top:15px;padding:12px;border-radius:8px;display:none;font-size:13px}
+    #message.success{background:#e8f7e8;color:#216b21}
+    #message.error{background:#fdeaea;color:#a02020}
+    .detail-info{background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:15px;font-size:13px}
+    .detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+    .detail-box{background:white;border:1px solid #ddd;border-radius:7px;padding:10px;text-align:center}
+    .detail-box strong{display:block;font-size:16px}
+    .detail-box span{font-size:11px;color:#777}
+    .position-item{padding:12px 0;border-bottom:1px solid #eee}
+    .position-item:last-child{border-bottom:0}
+    .position-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .position-name{font-weight:bold;font-size:14px}
+    .position-locations{font-size:12px;color:#777;margin-top:5px;line-height:1.8}
+    .qr-result{margin-top:20px}
+    .qr-item{margin-top:20px;padding-top:20px;border-top:1px solid #ddd;text-align:center}
+    .qr-preview{width:100%;overflow:hidden;background:#fff}
+    .qr-preview canvas{width:100%;height:auto;display:block}
+    .qr-name{font-size:16px;font-weight:bold;margin:10px 0}
+    .btn-download{width:100%;background:#eee;color:#222;margin-top:8px}
+    #qrTemp{display:none}
+
+    .qr-rack-modal{max-width:900px}
+    .rack-a5-preview{width:148mm;min-height:210mm;margin:0 auto;background:white;padding:8mm;color:#222}
+    .rack-a5-header{text-align:center;margin-bottom:5mm}
+    .rack-a5-company{font-size:11px;font-weight:bold;letter-spacing:1.5px}
+    .rack-a5-title{font-size:16px;font-weight:bold;margin-top:1mm}
+    .rack-a5-name{font-size:25px;font-weight:bold;margin-top:1mm}
+    .rack-a5-subtitle{font-size:9px;color:#777;margin-top:1mm}
+    .rack-a5-grid{display:grid;border-top:1px solid #222;border-left:1px solid #222}
+    .rack-a5-cell{border-right:1px solid #222;border-bottom:1px solid #222}
+    .rack-a5-header-cell{height:9mm;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;background:#f5f5f5}
+    .rack-a5-position{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold}
+    .rack-a5-qr{padding:1mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5mm}
+    .rack-a5-qr-box{display:flex;align-items:center;justify-content:center}
+    .rack-a5-qr-box img,.rack-a5-qr-box canvas{width:100%!important;height:100%!important}
+    .rack-a5-location{font-size:6px;font-weight:bold;white-space:nowrap}
+    .rack-a5-footer{text-align:center;margin-top:5mm;font-size:8px;color:#888}
+
+    @media print{
+      @page{size:A5 portrait;margin:0}
+      body *{visibility:hidden!important}
+      #rackQRModal,#rackQRModal *{visibility:visible!important}
+      #rackQRModal{position:absolute!important;inset:0!important;background:white!important;display:block!important;padding:0!important}
+      #rackQRModal .modal-card{max-width:none!important;width:148mm!important;height:210mm!important;max-height:none!important;padding:0!important;border-radius:0!important;overflow:hidden!important}
+      #rackQRModal .modal-header,#rackQRModal .modal-actions{display:none!important}
+      #rackQRPreview{display:block!important}
+      .rack-a5-preview{width:148mm!important;height:210mm!important;min-height:210mm!important;margin:0!important;box-shadow:none!important}
+    }
+
+    @media(max-width:700px){
+      .container{margin:10px auto;padding:12px}
+      .header-row{align-items:flex-start}
+      .rack-item{grid-template-columns:1fr auto}
+      .rack-stat{text-align:left}
+      .rack-actions{justify-content:flex-start}
+      .search-row{grid-template-columns:1fr}
+    }
+    @media(max-width:500px){
+      .row{grid-template-columns:1fr}
+      .level-options{flex-wrap:wrap}
+      .level-option{min-width:45%}
+      .modal-actions{grid-template-columns:1fr}
+      .position-header{align-items:flex-start}
+    }
+
+
+    /* PETA KAPASITAS RACK */
+    .rack-map-section{margin:18px 0}
+    .rack-map-title{font-size:14px;font-weight:bold;margin-bottom:10px}
+    .rack-map-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+    .rack-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#555}
+    .rack-legend-color{width:12px;height:12px;border-radius:3px;border:1px solid #ccc}
+    .rack-map-scroll{overflow-x:auto;padding-bottom:8px}
+    .rack-map{display:grid;gap:5px;min-width:max-content}
+    .rack-map-label{font-size:11px;font-weight:bold;text-align:center;padding:8px 4px;background:#f1f3f5;border-radius:5px}
+    .rack-map-level{font-size:12px;font-weight:bold;display:flex;align-items:center;justify-content:center;padding:8px;background:#f1f3f5;border-radius:5px}
+    .rack-location-cell{width:66px;min-height:65px;border:1px solid #ddd;border-radius:7px;padding:5px 3px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#222;font-size:11px}
+    .rack-location-cell strong{font-size:12px}
+    .rack-location-cell span{font-size:10px}
+    .rack-location-cell.selected{outline:3px solid #222;outline-offset:1px}
+    .rack-location-cell.status-kosong{background:#d9f2df}
+    .rack-location-cell.status-tersedia{background:#fff1b8}
+    .rack-location-cell.status-hampir-penuh{background:#ffd9c2}
+    .rack-location-cell.status-penuh{background:#f5b8b8}
+    .rack-location-cell:focus-visible{outline:3px solid #198754}
+    .location-detail-panel{border:1px solid #ddd;border-radius:10px;padding:14px;margin-top:16px}
+    .location-detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .location-detail-title{font-size:16px;font-weight:bold}
+    .location-detail-subtitle{font-size:12px;color:#777;margin-top:4px}
+    .location-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+    .location-summary-box{background:#f8f9fa;border-radius:7px;padding:10px;text-align:center}
+    .location-summary-box strong{display:block;font-size:16px}
+    .location-summary-box span{font-size:11px;color:#777}
+    .location-status-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}
+    .location-status-row select{padding:9px;border:1px solid #ccc;border-radius:7px;max-width:100%}
+    .location-roll-table-wrap{overflow-x:auto;margin-top:12px}
+    .location-roll-table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
+    .location-roll-table th,.location-roll-table td{padding:9px 8px;border-bottom:1px solid #eee;text-align:left}
+    .location-roll-table th{background:#f5f5f5}
+    .location-roll-empty{text-align:center;padding:20px;color:#777;font-size:13px}
+    .qr-position-list{margin-top:16px;border-top:1px solid #eee;padding-top:12px}
+    .qr-position-list summary{cursor:pointer;font-size:13px;font-weight:bold}
+    .qr-position-buttons{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+    @media(max-width:500px){
+      .rack-location-cell{width:58px;min-height:60px}
+      .location-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .location-summary-box{padding:8px 3px}
+      .location-summary-box strong{font-size:14px}
+    }
+
+
+    /* DASHBOARD SEMUA RACK */
+    .rack-dashboard{display:flex;flex-direction:column;gap:12px}
+    .rack-panel{background:#fff;border:1px solid #ddd;border-radius:10px;overflow:hidden}
+    .rack-panel-header{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer}
+    .rack-panel-header:hover{background:#fafafa}
+    .rack-collapse-icon{width:24px;flex-shrink:0;text-align:center;font-size:16px}
+    .rack-panel-info{flex:1;min-width:0}
+    .rack-panel-name{font-size:15px;font-weight:bold}
+    .rack-panel-meta{font-size:12px;color:#777;margin-top:4px}
+    .rack-panel-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    .rack-panel-actions .btn{padding:8px 10px}
+    .rack-panel-body{display:none;border-top:1px solid #eee;padding:14px}
+    .rack-panel.expanded .rack-panel-body{display:block}
+    .rack-panel.expanded .rack-collapse-icon{transform:rotate(90deg)}
+    .rack-inline-map{display:grid;gap:5px;min-width:max-content}
+    .rack-inline-detail{margin-top:14px;min-height:0}
+    .rack-inline-detail:empty{display:none}
+    .rack-inline-detail .location-detail-panel{margin-top:0}
+    .rack-panel .rack-map-scroll{max-width:100%}
+    .rack-panel .rack-location-cell{flex-shrink:0}
+    @media(max-width:600px){
+      .rack-panel-header{flex-wrap:wrap;padding:12px}
+      .rack-panel-info{min-width:calc(100% - 40px)}
+      .rack-panel-actions{width:100%;justify-content:flex-start;padding-left:36px}
+      .rack-panel-body{padding:10px}
+    }
+
+  </style>
+</head>
+<body>
+
+<script>
+window.headerTitle='Manage Location';
+</script>
+<?!= include('header'); ?>
+
+<div class="container">
+  <div class="card">
+    <div class="header-row">
+      <div>
+        <h2>📍 Manage Location</h2>
+        <div class="subtitle">Kelola rack dan lokasi penyimpanan.</div>
+      </div>
+      <button class="btn btn-primary" onclick="openAddRack()">＋ TAMBAH RACK</button>
+    </div>
+
+    <div class="search-row">
+      <input type="text" id="searchRack" placeholder="🔍 Cari Rack..." oninput="renderRacks()">
+      <div class="count" id="rackCount">0 Rack</div>
+    </div>
+
+    <div class="rack-list" id="rackList">
+      <div class="empty">Memuat data rack...</div>
+    </div>
+  </div>
+
+  <div id="message"></div>
+</div>
+
+<!-- MODAL ADD / EDIT RACK -->
+<div class="modal" id="rackModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="modalTitle">Tambah Rack</h3>
+      <button class="close" onclick="closeRackModal()">×</button>
+    </div>
+
+    <div class="input-group">
+      <div class="label">Nama Rack</div>
+      <input type="text" id="rackName" placeholder="Contoh: Rack F">
+    </div>
+
+    <div class="row">
+      <div class="input-group">
+        <div class="label">Posisi Mulai</div>
+        <input type="number" id="startPosition" min="1" value="1">
+      </div>
+
+      <div class="input-group">
+        <div class="label">Posisi Sampai</div>
+        <input type="number" id="endPosition" min="1" value="8" oninput="updatePreview()">
+      </div>
+    </div>
+
+    <div class="input-group">
+      <div class="label">Level</div>
+      <div class="level-options">
+        <label class="level-option"><input type="checkbox" class="level-check" value="A" onchange="updatePreview()"> A</label>
+        <label class="level-option"><input type="checkbox" class="level-check" value="B" onchange="updatePreview()"> B</label>
+        <label class="level-option"><input type="checkbox" class="level-check" value="C" onchange="updatePreview()"> C</label>
+        <label class="level-option"><input type="checkbox" class="level-check" value="D" onchange="updatePreview()"> D</label>
+        <label class="level-option"><input type="checkbox" class="level-check" value="E" onchange="updatePreview()"> E</label>
+      </div>
+    </div>
+
+    <div class="preview-box">
+      <div class="preview-title">Preview Location</div>
+      <div id="previewLocation">-</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeRackModal()">BATAL</button>
+      <button class="btn btn-primary" id="saveRackButton" onclick="saveRack()">SIMPAN</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETAIL RACK -->
+<div class="modal" id="detailModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="detailTitle">Detail Rack</h3>
+      <button class="close" onclick="closeDetailModal()">×</button>
+    </div>
+
+    <div class="detail-info">
+      <strong id="detailRackName">Rack A</strong>
+
+      <div class="detail-grid">
+        <div class="detail-box">
+          <strong id="detailPosition">0</strong>
+          <span>Posisi</span>
+        </div>
+        <div class="detail-box">
+          <strong id="detailLevel">0</strong>
+          <span>Level</span>
+        </div>
+        <div class="detail-box">
+          <strong id="detailTotal">0</strong>
+          <span>Location</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="detailLocations"></div>
+
+    <button class="btn btn-secondary" style="width:100%;margin-top:15px" onclick="closeDetailModal()">TUTUP</button>
+
+    <div class="qr-result" id="qrResult"></div>
+  </div>
+</div>
+
+<!-- MODAL QR RACK -->
+<div class="modal" id="rackQRModal">
+  <div class="modal-card qr-rack-modal">
+    <div class="modal-header">
+      <h3 id="rackQRTitle">QR Rack</h3>
+      <button class="close" onclick="closeRackQR()">×</button>
+    </div>
+
+    <div id="rackQRPreview"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeRackQR()">TUTUP</button>
+      <button class="btn btn-primary" onclick="printRackQRPage()">🖨 PRINT A5</button>
+    </div>
+  </div>
+</div>
+
+<div id="qrTemp"></div>
+
+<script>
+const locationStockCache={};
+const rackStockLoading={};
+const rackStockCallbacks={};
+const locationViewModes={};
+
+let rackDatabase=[];
+let editingRack=null;
+
+function loadRacks(){
+  document.getElementById('rackList').innerHTML='<div class="empty">Memuat data rack...</div>';
+
+  google.script.run
+    .withSuccessHandler(function(response){
+      if(!response||!response.success){
+        showMessage(response&&response.message?response.message:'Gagal memuat rack.','error');
+        return;
+      }
+
+      rackDatabase=response.racks||[];
+      renderRacks();
+    })
+    .withFailureHandler(function(error){
+      showMessage('Terjadi error: '+error.message,'error');
+    })
+    .getRackMaster();
+}
+
+
+function renderRacks(){
+  const keyword=document.getElementById('searchRack').value.trim().toLowerCase();
+  const list=document.getElementById('rackList');
+
+  const filtered=rackDatabase.filter(function(item){
+    return item.rack.toLowerCase().includes(keyword);
+  });
+
+  document.getElementById('rackCount').textContent=filtered.length+' Rack';
+
+  if(!filtered.length){
+    list.innerHTML='<div class="empty">Rack tidak ditemukan.</div>';
+    return;
+  }
+
+  list.innerHTML='';
+  list.className='rack-dashboard';
+
+  filtered.forEach(function(item){
+    const panel=document.createElement('div');
+    panel.className='rack-panel';
+    panel.dataset.rack=item.rack;
+
+    const header=document.createElement('div');
+    header.className='rack-panel-header';
+
+    const arrow=document.createElement('div');
+    arrow.className='rack-collapse-icon';
+    arrow.textContent='›';
+
+    const info=document.createElement('div');
+    info.className='rack-panel-info';
+    info.innerHTML=
+      '<div class="rack-panel-name">'+escapeHtml(item.rack)+'</div>'+
+      '<div class="rack-panel-meta">Posisi '+
+      escapeHtml(item.startPosition)+'–'+escapeHtml(item.endPosition)+
+      ' · '+item.levels.length+' level · '+item.totalLocation+' location</div>';
+
+    const actions=document.createElement('div');
+    actions.className='rack-panel-actions';
+
+    const edit=document.createElement('button');
+    edit.className='btn btn-edit';
+    edit.textContent='EDIT';
+    edit.onclick=function(event){
+      event.stopPropagation();
+      openEditRack(item.rack);
+    };
+
+    const qr=document.createElement('button');
+    qr.className='btn btn-primary';
+    qr.textContent='🖨 QR RACK';
+    qr.onclick=function(event){
+      event.stopPropagation();
+      printRackQR(item);
+    };
+
+    actions.appendChild(edit);
+    actions.appendChild(qr);
+
+    header.appendChild(arrow);
+    header.appendChild(info);
+    header.appendChild(actions);
+
+    const body=document.createElement('div');
+    body.className='rack-panel-body';
+
+    const mapContainer=document.createElement('div');
+    mapContainer.className='rack-inline-map-container';
+    mapContainer.id='rackInlineMap-'+rackKey(item.rack);
+
+    const detail=document.createElement('div');
+    detail.className='rack-inline-detail';
+    detail.id='rackInlineDetail-'+rackKey(item.rack);
+
+    body.appendChild(mapContainer);
+    body.appendChild(detail);
+
+    header.onclick=function(){
+      const expanded=panel.classList.toggle('expanded');
+      arrow.textContent=expanded?'⌄':'›';
+
+      if(expanded&&!mapContainer.dataset.rendered){
+        renderRackInline(item,mapContainer,detail);
+        mapContainer.dataset.rendered='1';
+        loadRackStockInline(item.rack);
+      }
+    };
+
+    panel.appendChild(header);
+    panel.appendChild(body);
+    list.appendChild(panel);
+  });
+}
+
+function rackKey(rack){
+  return String(rack).replace(/[^a-zA-Z0-9_-]/g,'_');
+}
+
+
+function renderRackInline(item,container,detail){
+  container.innerHTML='';
+
+  const section=document.createElement('div');
+  section.className='rack-map-section';
+
+  const title=document.createElement('div');
+  title.className='rack-map-title';
+  title.textContent='Peta Kapasitas Rack';
+  section.appendChild(title);
+
+  const legend=document.createElement('div');
+  legend.className='rack-map-legend';
+
+  [
+    ['Kosong','#d9f2df'],
+    ['Tersedia','#fff1b8'],
+    ['Hampir Penuh','#ffd9c2'],
+    ['Penuh','#f5b8b8']
+  ].forEach(function(entry){
+    const wrapper=document.createElement('div');
+    wrapper.className='rack-legend-item';
+
+    const color=document.createElement('span');
+    color.className='rack-legend-color';
+    color.style.background=entry[1];
+
+    const label=document.createElement('span');
+    label.textContent=entry[0];
+
+    wrapper.appendChild(color);
+    wrapper.appendChild(label);
+    legend.appendChild(wrapper);
+  });
+
+  section.appendChild(legend);
+
+  const scroll=document.createElement('div');
+  scroll.className='rack-map-scroll';
+
+  const grid=document.createElement('div');
+  grid.className='rack-inline-map';
+  grid.style.gridTemplateColumns='38px repeat('+item.positions.length+',66px)';
+
+  const positions=item.positions.slice().sort(function(a,b){
+    return Number(b)-Number(a);
+  });
+
+  const levels=item.levels.slice().sort().reverse();
+
+  const corner=document.createElement('div');
+  corner.className='rack-map-label';
+  corner.textContent='LVL';
+  grid.appendChild(corner);
+
+  positions.forEach(function(position){
+    const label=document.createElement('div');
+    label.className='rack-map-label';
+    label.textContent=String(position).padStart(2,'0');
+    grid.appendChild(label);
+  });
+
+  levels.forEach(function(level){
+    const levelLabel=document.createElement('div');
+    levelLabel.className='rack-map-level';
+    levelLabel.textContent=level;
+    grid.appendChild(levelLabel);
+
+    positions.forEach(function(position){
+      const positionText=String(position).padStart(2,'0');
+      const locationId=item.rack+' '+positionText+'-'+level;
+      const location=(item.locations||[]).find(function(entry){
+        return entry.id===locationId;
+      });
+
+      const status=location&&location.status?location.status:'Kosong';
+      const cell=document.createElement('button');
+      cell.type='button';
+      cell.className='rack-location-cell '+getLocationStatusClass(status);
+      cell.dataset.locationId=locationId;
+      cell.title=locationId+' • '+status;
+
+      const id=document.createElement('strong');
+      id.textContent=positionText+'-'+level;
+
+      const statusText=document.createElement('span');
+      statusText.textContent=status;
+
+      cell.appendChild(id);
+      cell.appendChild(statusText);
+
+      cell.onclick=function(){
+        grid.querySelectorAll('.rack-location-cell').forEach(function(el){
+          el.classList.remove('selected');
+        });
+
+        cell.classList.add('selected');
+        loadLocationDetailInline(locationId,cell,detail);
+      };
+
+      grid.appendChild(cell);
+    });
+  });
+
+  scroll.appendChild(grid);
+  section.appendChild(scroll);
+  container.appendChild(section);
+
+  // QR per posisi tetap tersedia
+  const qrSection=document.createElement('details');
+  qrSection.className='qr-position-list';
+
+  const summary=document.createElement('summary');
+  summary.textContent='QR per Posisi';
+  qrSection.appendChild(summary);
+
+  const buttons=document.createElement('div');
+  buttons.className='qr-position-buttons';
+
+  item.positions.slice().sort(function(a,b){
+    return Number(a)-Number(b);
+  }).forEach(function(position){
+    const button=document.createElement('button');
+    button.className='btn btn-secondary';
+    button.textContent='QR '+position;
+    button.onclick=function(){
+      generatePositionQR(item.rack,position,item.levels);
+    };
+    buttons.appendChild(button);
+  });
+
+  qrSection.appendChild(buttons);
+  container.appendChild(qrSection);
+}
+
+
+
+function loadRackStockInline(rack){
+  const item=rackDatabase.find(function(entry){
+    return entry.rack===rack;
+  });
+  if(!item)return;
+
+  const allCached=(item.locations||[]).length>0&&
+    item.locations.every(function(location){
+      return !!locationStockCache[location.id];
+    });
+
+  if(allCached){
+    refreshRackMapInline(rack);
+    return;
+  }
+
+  // Jika request sudah berjalan, jangan kirim request duplikat.
+  if(rackStockLoading[rack]){
+    rackStockCallbacks[rack]=true;
+    return;
+  }
+
+  rackStockLoading[rack]=true;
+
+  const token=localStorage.getItem('warehouseToken');
+
+  google.script.run
+    .withSuccessHandler(function(response){
+      rackStockLoading[rack]=false;
+
+      if(!response||!response.success){
+        delete rackStockCallbacks[rack];
+        showMessage(response&&response.message?response.message:'Gagal memuat stok rack.','error');
+        return;
+      }
+
+      const fresh=response.locations||{};
+
+      Object.keys(fresh).forEach(function(id){
+        locationStockCache[id]=fresh[id];
+
+        const location=(item.locations||[]).find(function(entry){
+          return entry.id===id;
+        });
+
+        if(location){
+          location.status=fresh[id].status||location.status||'Kosong';
+        }
+      });
+
+      refreshRackMapInline(rack);
+
+      const detail=document.getElementById('rackInlineDetail-'+rackKey(rack));
+      const selected=document.querySelector(
+        '#rackInlineMap-'+rackKey(rack)+' .rack-location-cell.selected'
+      );
+
+      if(detail&&selected){
+        loadLocationDetailInline(selected.dataset.locationId,selected,detail);
+      }
+
+      delete rackStockCallbacks[rack];
+    })
+    .withFailureHandler(function(error){
+      rackStockLoading[rack]=false;
+      delete rackStockCallbacks[rack];
+      showMessage('Gagal memuat stok rack: '+error.message,'error');
+    })
+    .getRackStockDetails(rack,token);
+}
+
+function refreshRackMapInline(rack){
+  const item=rackDatabase.find(function(entry){
+    return entry.rack===rack;
+  });
+  if(!item)return;
+
+  const container=document.getElementById('rackInlineMap-'+rackKey(rack));
+  const detail=document.getElementById('rackInlineDetail-'+rackKey(rack));
+  if(!container||!detail)return;
+
+  const selectedId=container.querySelector('.rack-location-cell.selected');
+  const selectedLocation=selectedId?selectedId.dataset.locationId:null;
+
+  renderRackInline(item,container,detail);
+  container.dataset.rendered='1';
+
+  if(selectedLocation){
+    const cell=Array.from(container.querySelectorAll('.rack-location-cell'))
+      .find(function(el){return el.dataset.locationId===selectedLocation;});
+
+    if(cell){
+      cell.classList.add('selected');
+      if(locationStockCache[selectedLocation]){
+        loadLocationDetailInline(selectedLocation,cell,detail);
+      }
+    }
+  }
+}
+
+
+function loadLocationDetailInline(locationId,cell,detail){
+  const cached=locationStockCache[locationId];
+
+  if(cached){
+    renderLocationDetailInline(cached,cell,detail);
+    return;
+  }
+
+  detail.innerHTML='<div class="location-detail-panel">Memuat data lokasi...</div>';
+
+  const rack=locationId.replace(/\s+\d{2}-[A-Z]$/,'');
+  loadRackStockInline(rack);
+}
+
+
+function renderLocationDetailInline(data,cell,detail){
+  detail.innerHTML='';
+
+  const box=document.createElement('div');
+  box.className='location-detail-panel';
+
+  const title=document.createElement('div');
+  title.className='location-detail-title';
+  title.textContent=data.locationId;
+  box.appendChild(title);
+
+  const subtitle=document.createElement('div');
+  subtitle.className='location-detail-subtitle';
+  subtitle.textContent='Detail stok berdasarkan Location ID';
+  box.appendChild(subtitle);
+
+  const summary=document.createElement('div');
+  summary.className='location-summary';
+
+  [
+    [data.rollCount||0,'Jumlah Roll'],
+    [formatLocationNumber(data.totalMeter)+' m','Total Meter'],
+    [formatLocationNumber(data.totalYard)+' yd','Total Yard']
+  ].forEach(function(entry){
+    const card=document.createElement('div');
+    card.className='location-summary-box';
+
+    const value=document.createElement('strong');
+    value.textContent=entry[0];
+
+    const label=document.createElement('span');
+    label.textContent=entry[1];
+
+    card.appendChild(value);
+    card.appendChild(label);
+    summary.appendChild(card);
+  });
+
+  box.appendChild(summary);
+
+  const statusRow=document.createElement('div');
+  statusRow.className='location-status-row';
+
+  const statusLabel=document.createElement('label');
+  statusLabel.textContent='Status lokasi:';
+  statusLabel.style.fontWeight='bold';
+  statusLabel.style.fontSize='13px';
+
+  const select=document.createElement('select');
+
+  ['Kosong','Tersedia','Hampir Penuh','Penuh'].forEach(function(status){
+    const option=document.createElement('option');
+    option.value=status;
+    option.textContent=status;
+    select.appendChild(option);
+  });
+
+  select.value=data.status||'Kosong';
+
+  const save=document.createElement('button');
+  save.className='btn btn-primary';
+  save.textContent='SIMPAN STATUS';
+  save.onclick=function(){
+    saveLocationStatus(data,select.value,cell,select,save);
+  };
+
+  statusRow.appendChild(statusLabel);
+  statusRow.appendChild(select);
+  statusRow.appendChild(save);
+  box.appendChild(statusRow);
+
+  // Header daftar stok
+  const listHeader=document.createElement('div');
+  listHeader.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px;margin-bottom:10px';
+
+  const listTitle=document.createElement('div');
+  listTitle.className='rack-map-title';
+  listTitle.style.margin='0';
+  listTitle.textContent='Daftar Stok';
+
+  const toggle=document.createElement('div');
+  toggle.style.cssText='display:flex;gap:4px;background:#f1f3f5;padding:4px;border-radius:8px';
+
+  const currentMode=locationViewModes[data.locationId]||'group';
+
+  const rollButton=document.createElement('button');
+  rollButton.className='btn '+(currentMode==='roll'?'btn-primary':'btn-secondary');
+  rollButton.textContent='View Roll';
+
+  const groupButton=document.createElement('button');
+  groupButton.className='btn '+(currentMode==='group'?'btn-primary':'btn-secondary');
+  groupButton.textContent='View Grup';
+
+  const listContainer=document.createElement('div');
+  listContainer.className='location-roll-list';
+
+  function renderSelectedView(mode){
+    locationViewModes[data.locationId]=mode;
+
+    rollButton.className='btn '+(mode==='roll'?'btn-primary':'btn-secondary');
+    groupButton.className='btn '+(mode==='group'?'btn-primary':'btn-secondary');
+
+    renderLocationRollList(data,listContainer,mode);
+  }
+
+  rollButton.onclick=function(){renderSelectedView('roll');};
+  groupButton.onclick=function(){renderSelectedView('group');};
+
+  toggle.appendChild(rollButton);
+  toggle.appendChild(groupButton);
+
+  listHeader.appendChild(listTitle);
+  listHeader.appendChild(toggle);
+
+  box.appendChild(listHeader);
+  box.appendChild(listContainer);
+  detail.appendChild(box);
+
+  renderSelectedView(currentMode);
+}
+
+
+
+function renderLocationRollList(data,container,mode){
+  container.innerHTML='';
+
+  const rolls=data.rolls||[];
+
+  if(!rolls.length){
+    const empty=document.createElement('div');
+    empty.className='location-roll-empty';
+    empty.textContent='Belum ada roll tercatat di lokasi ini.';
+    container.appendChild(empty);
+    return;
+  }
+
+  if(mode==='roll'){
+    renderLocationRollTable(rolls,container);
+    return;
+  }
+
+  const groups={};
+
+  rolls.forEach(function(roll){
+    const key=JSON.stringify([
+      roll.category||'',
+      roll.fabricType||'',
+      roll.product||roll.sku||'',
+      roll.color||'',
+      roll.gsm||'',
+      roll.width||''
+    ]);
+
+    if(!groups[key]){
+      groups[key]={
+        category:roll.category||'-',
+        fabricType:roll.fabricType||'-',
+        product:roll.product||roll.sku||'-',
+        color:roll.color||'-',
+        gsm:roll.gsm||'-',
+        width:roll.width||'-',
+        rollCount:0,
+        totalMeter:0,
+        totalYard:0,
+        rolls:[]
+      };
+    }
+
+    const group=groups[key];
+    group.rollCount++;
+    group.totalMeter+=Number(roll.meter)||0;
+    group.totalYard+=Number(roll.yard)||0;
+    group.rolls.push(roll);
+  });
+
+  const groupList=Object.values(groups);
+
+  const summary=document.createElement('div');
+  summary.style.cssText='font-size:12px;color:#777;margin-bottom:10px';
+  summary.textContent=groupList.length+' grup produk · '+rolls.length+' roll';
+  container.appendChild(summary);
+
+  const wrap=document.createElement('div');
+  wrap.className='location-roll-table-wrap';
+
+  const table=document.createElement('table');
+  table.className='location-roll-table';
+
+  const thead=document.createElement('thead');
+  const head=document.createElement('tr');
+
+  ['Produk','Warna','GSM','Lebar','Jumlah Roll','Total Meter','Total Yard'].forEach(function(label){
+    const th=document.createElement('th');
+    th.textContent=label;
+    head.appendChild(th);
+  });
+
+  thead.appendChild(head);
+  table.appendChild(thead);
+
+  const tbody=document.createElement('tbody');
+
+  groupList.forEach(function(group){
+    const row=document.createElement('tr');
+
+    [
+      group.product,
+      group.color,
+      group.gsm,
+      group.width,
+      group.rollCount,
+      formatLocationNumber(group.totalMeter),
+      formatLocationNumber(group.totalYard)
+    ].forEach(function(value){
+      const td=document.createElement('td');
+      td.textContent=value===null||value===undefined||value===''?'-':String(value);
+      row.appendChild(td);
+    });
+
+    // Klik baris untuk melihat roll dalam grup tersebut
+    row.style.cursor='pointer';
+    row.title='Klik untuk melihat daftar roll';
+    row.onclick=function(){
+      showLocationGroupRolls(group);
+    };
+
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  container.appendChild(wrap);
+}
+
+
+function showLocationGroupRolls(group){
+  const container=document.getElementById('locationGroupRollModal');
+
+  if(!container){
+    const modal=document.createElement('div');
+    modal.id='locationGroupRollModal';
+    modal.className='modal';
+    modal.innerHTML=
+      '<div class="modal-card" style="max-width:900px">'+
+        '<div class="modal-header">'+
+          '<h3 id="locationGroupRollTitle">Detail Grup</h3>'+
+          '<button class="close" onclick="closeLocationGroupRolls()">×</button>'+
+        '</div>'+
+        '<div id="locationGroupRollContent"></div>'+
+        '<button class="btn btn-secondary" style="width:100%;margin-top:15px" onclick="closeLocationGroupRolls()">TUTUP</button>'+
+      '</div>';
+
+    document.body.appendChild(modal);
+  }
+
+  document.getElementById('locationGroupRollTitle').textContent=
+    group.product+' · '+group.color;
+
+  const content=document.getElementById('locationGroupRollContent');
+  content.innerHTML='';
+
+  const summary=document.createElement('div');
+  summary.style.cssText='font-size:13px;color:#777;margin-bottom:10px';
+  summary.textContent=
+    group.rollCount+' roll · '+
+    formatLocationNumber(group.totalMeter)+' meter';
+  content.appendChild(summary);
+
+  renderLocationRollTable(group.rolls,content);
+
+  document.getElementById('locationGroupRollModal').classList.add('show');
+}
+
+function closeLocationGroupRolls(){
+  document.getElementById('locationGroupRollModal').classList.remove('show');
+}
+
+
+function renderLocationRollTable(rolls,container){
+  const wrap=document.createElement('div');
+  wrap.className='location-roll-table-wrap';
+
+  const table=document.createElement('table');
+  table.className='location-roll-table';
+
+  const thead=document.createElement('thead');
+  const head=document.createElement('tr');
+
+  ['Roll ID','Produk','Warna','Grade','Status Roll','Meter'].forEach(function(label){
+    const th=document.createElement('th');
+    th.textContent=label;
+    head.appendChild(th);
+  });
+
+  thead.appendChild(head);
+  table.appendChild(thead);
+
+  const tbody=document.createElement('tbody');
+
+  rolls.forEach(function(roll){
+    const row=document.createElement('tr');
+
+    [
+      roll.rollId,
+      roll.product||roll.sku||'-',
+      roll.color||'-',
+      roll.grade||'-',
+      roll.status||'-',
+      formatLocationNumber(roll.meter)
+    ].forEach(function(value){
+      const td=document.createElement('td');
+      td.textContent=value===null||value===undefined||value===''?'-':String(value);
+      row.appendChild(td);
+    });
+
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  container.appendChild(wrap);
+}
+
+
+function printRackQR(item){
+  document.getElementById('rackQRTitle').textContent='QR '+item.rack;
+  document.getElementById('rackQRPreview').innerHTML='<div style="text-align:center;padding:30px;color:#777">Membuat QR...</div>';
+  document.getElementById('rackQRModal').classList.add('show');
+
+  setTimeout(function(){
+    renderRackQR(item);
+  },50);
+}
+
+function renderRackQR(item){
+  const positions=item.positions.slice().sort(function(a,b){
+    return Number(a)-Number(b);
+  });
+
+  const levels=item.levels.slice().sort();
+
+  const positionCount=positions.length;
+
+  let rowHeight=25;
+  let qrSize=18;
+
+  if(positionCount<=5){
+    rowHeight=30;
+    qrSize=22;
+  }else if(positionCount<=6){
+    rowHeight=27;
+    qrSize=20;
+  }else if(positionCount<=8){
+    rowHeight=22;
+    qrSize=17;
+  }else if(positionCount<=10){
+    rowHeight=18;
+    qrSize=14;
+  }else{
+    rowHeight=15;
+    qrSize=12;
+  }
+
+  let html=
+    '<div class="rack-a5-preview">'+
+      '<div class="rack-a5-header">'+
+        '<div class="rack-a5-company">PADAJAYA PELITA</div>'+
+        '<div class="rack-a5-title">LOCATION MAP</div>'+
+        '<div class="rack-a5-name">'+escapeHtml(item.rack)+'</div>'+
+        '<div class="rack-a5-subtitle">Scan QR sesuai posisi penyimpanan</div>'+
+      '</div>'+
+      '<div class="rack-a5-grid" style="grid-template-columns:12mm repeat('+levels.length+',1fr)">'+
+        '<div class="rack-a5-cell rack-a5-header-cell">POS</div>';
+
+  levels.forEach(function(level){
+    html+=
+      '<div class="rack-a5-cell rack-a5-header-cell">'+
+        escapeHtml(level)+
+      '</div>';
+  });
+
+  positions.forEach(function(position){
+    html+=
+      '<div class="rack-a5-cell rack-a5-position" style="height:'+rowHeight+'mm">'+
+        escapeHtml(position)+
+      '</div>';
+
+    levels.forEach(function(level){
+      const locationId=item.rack+' '+position+'-'+level;
+      const qrId='rackqr-'+
+        String(position).replace(/[^a-zA-Z0-9]/g,'')+
+        '-'+level;
+
+      html+=
+        '<div class="rack-a5-cell rack-a5-qr" style="height:'+rowHeight+'mm">'+
+          '<div class="rack-a5-qr-box" id="'+qrId+'" style="width:'+qrSize+'mm;height:'+qrSize+'mm"></div>'+
+          '<div class="rack-a5-location">'+
+            escapeHtml(locationId)+
+          '</div>'+
+        '</div>';
+    });
+  });
+
+  html+=
+      '</div>'+
+      '<div class="rack-a5-footer">PADAJAYA PELITA • LOCATION QR MAP</div>'+
+    '</div>';
+
+  document.getElementById('rackQRPreview').innerHTML=html;
+
+  positions.forEach(function(position){
+    levels.forEach(function(level){
+      const locationId=item.rack+' '+position+'-'+level;
+
+      const qrId='rackqr-'+
+        String(position).replace(/[^a-zA-Z0-9]/g,'')+
+        '-'+level;
+
+      const qr=document.getElementById(qrId);
+
+      if(qr){
+        new QRCode(qr,{
+          text:locationId,
+          width:220,
+          height:220,
+          correctLevel:QRCode.CorrectLevel.M
+        });
+      }
+    });
+  });
+}
+
+function closeRackQR(){
+  document.getElementById('rackQRModal').classList.remove('show');
+  document.getElementById('rackQRPreview').innerHTML='';
+}
+
+function printRackQRPage(){
+  window.print();
+}
+
+function openAddRack(){
+  editingRack=null;
+
+  document.getElementById('modalTitle').textContent='Tambah Rack';
+  document.getElementById('rackName').value='';
+  document.getElementById('rackName').readOnly=false;
+  document.getElementById('startPosition').value=1;
+  document.getElementById('endPosition').value=8;
+
+  document.querySelectorAll('.level-check').forEach(function(item){
+    item.checked=['A','B','C'].includes(item.value);
+  });
+
+  updatePreview();
+  document.getElementById('rackModal').classList.add('show');
+}
+
+function openEditRack(rack){
+  const item=rackDatabase.find(function(data){
+    return data.rack===rack;
+  });
+
+  if(!item)return;
+
+  editingRack=rack;
+
+  document.getElementById('modalTitle').textContent='Edit Rack';
+  document.getElementById('rackName').value=item.rack;
+  document.getElementById('rackName').readOnly=true;
+  document.getElementById('startPosition').value=1;
+  document.getElementById('endPosition').value=item.endPosition;
+
+  document.querySelectorAll('.level-check').forEach(function(check){
+    check.checked=item.levels.includes(check.value);
+  });
+
+  updatePreview();
+  document.getElementById('rackModal').classList.add('show');
+}
+
+function closeRackModal(){
+  document.getElementById('rackModal').classList.remove('show');
+}
+
+function updatePreview(){
+  const rack=document.getElementById('rackName').value.trim();
+  const start=Number(document.getElementById('startPosition').value);
+  const end=Number(document.getElementById('endPosition').value);
+  const levels=[...document.querySelectorAll('.level-check:checked')].map(function(item){return item.value;});
+  const preview=document.getElementById('previewLocation');
+
+  if(!rack||!start||!end||end<start||!levels.length){
+    preview.textContent='-';
+    return;
+  }
+
+  const result=[];
+
+  for(let pos=start;pos<=end;pos++){
+    const position=String(pos).padStart(2,'0');
+
+    levels.forEach(function(level){
+      result.push(rack+' '+position+'-'+level);
+    });
+  }
+
+  preview.innerHTML=result.map(function(item){
+    return '<div>'+escapeHtml(item)+'</div>';
+  }).join('');
+}
+
+function saveRack(){
+  const rack=document.getElementById('rackName').value.trim();
+  const start=Number(document.getElementById('startPosition').value);
+  const end=Number(document.getElementById('endPosition').value);
+  const levels=[...document.querySelectorAll('.level-check:checked')].map(function(item){return item.value;});
+  const token=localStorage.getItem('warehouseToken');
+  const button=document.getElementById('saveRackButton');
+
+  if(!rack){
+    showMessage('Nama Rack harus diisi.','error');
+    return;
+  }
+
+  if(!Number.isInteger(start)||!Number.isInteger(end)||start!==1||end<1){
+    showMessage('Posisi harus dimulai dari 01.','error');
+    return;
+  }
+
+  if(!levels.length){
+    showMessage('Minimal pilih satu level.','error');
+    return;
+  }
+
+  button.disabled=true;
+  button.textContent='MENYIMPAN...';
+
+  if(editingRack){
+    google.script.run
+      .withSuccessHandler(function(response){
+        button.disabled=false;
+        button.textContent='SIMPAN';
+
+        if(!response.success){
+          if(response.blockedLocations&&response.blockedLocations.length){
+            showMessage(
+              'Tidak bisa dikurangi. Location yang sedang digunakan: '+
+              response.blockedLocations.join(', '),
+              'error'
+            );
+          }else{
+            showMessage(response.message||'Gagal mengubah Rack.','error');
+          }
+          return;
+        }
+
+        closeRackModal();
+
+        showMessage(
+          'Rack berhasil diperbarui. '+
+          response.added.length+' location ditambahkan, '+
+          response.deleted.length+' location dihapus.',
+          'success'
+        );
+
+        loadRacks();
+      })
+      .withFailureHandler(function(error){
+        button.disabled=false;
+        button.textContent='SIMPAN';
+        showMessage('Terjadi error: '+error.message,'error');
+      })
+      .updateRackConfiguration(rack,end,levels,token);
+
+  }else{
+    google.script.run
+      .withSuccessHandler(function(response){
+        button.disabled=false;
+        button.textContent='SIMPAN';
+
+        if(!response.success){
+          showMessage(response.message||'Gagal membuat Rack.','error');
+          return;
+        }
+
+        closeRackModal();
+
+        showMessage(
+          'Rack berhasil dibuat. '+response.created.length+' location ditambahkan.',
+          'success'
+        );
+
+        loadRacks();
+      })
+      .withFailureHandler(function(error){
+        button.disabled=false;
+        button.textContent='SIMPAN';
+        showMessage('Terjadi error: '+error.message,'error');
+      })
+      .generateLocations(rack,start,end,levels,token);
+  }
+}
+
+
+
+function openDetail(rack){
+  const item=rackDatabase.find(function(data){return data.rack===rack;});
+  if(!item)return;
+
+  document.getElementById('detailTitle').textContent=rack;
+  document.getElementById('detailRackName').textContent=rack;
+  document.getElementById('detailPosition').textContent=item.positions.length;
+  document.getElementById('detailLevel').textContent=item.levels.join(', ');
+  document.getElementById('detailTotal').textContent=item.totalLocation;
+
+  const container=document.getElementById('detailLocations');
+  container.innerHTML='';
+
+  const locations=item.locations||[];
+  const positionNumbers=item.positions.slice().sort(function(a,b){
+    return Number(b)-Number(a);
+  });
+  const levels=item.levels.slice().sort().reverse();
+
+  const section=document.createElement('div');
+  section.className='rack-map-section';
+
+  const title=document.createElement('div');
+  title.className='rack-map-title';
+  title.textContent='Peta Kapasitas Rack';
+  section.appendChild(title);
+
+  const legend=document.createElement('div');
+  legend.className='rack-map-legend';
+
+  [
+    ['Kosong','#d9f2df'],
+    ['Tersedia','#fff1b8'],
+    ['Hampir Penuh','#ffd9c2'],
+    ['Penuh','#f5b8b8']
+  ].forEach(function(entry){
+    const itemLegend=document.createElement('div');
+    itemLegend.className='rack-legend-item';
+
+    const color=document.createElement('span');
+    color.className='rack-legend-color';
+    color.style.background=entry[1];
+
+    const label=document.createElement('span');
+    label.textContent=entry[0];
+
+    itemLegend.appendChild(color);
+    itemLegend.appendChild(label);
+    legend.appendChild(itemLegend);
+  });
+
+  section.appendChild(legend);
+
+  const scroll=document.createElement('div');
+  scroll.className='rack-map-scroll';
+
+  const grid=document.createElement('div');
+  grid.className='rack-map';
+  grid.style.gridTemplateColumns='38px repeat('+positionNumbers.length+',66px)';
+
+  const corner=document.createElement('div');
+  corner.className='rack-map-label';
+  corner.textContent='LVL';
+  grid.appendChild(corner);
+
+  positionNumbers.forEach(function(position){
+    const header=document.createElement('div');
+    header.className='rack-map-label';
+    header.textContent=position;
+    grid.appendChild(header);
+  });
+
+  levels.forEach(function(level){
+    const levelLabel=document.createElement('div');
+    levelLabel.className='rack-map-level';
+    levelLabel.textContent=level;
+    grid.appendChild(levelLabel);
+
+    positionNumbers.forEach(function(position){
+      const positionText=String(position).padStart(2,'0');
+      const locationId=rack+' '+positionText+'-'+level;
+      const location=locations.find(function(data){
+        return data.id===locationId;
+      });
+
+      const status=location&&location.status?location.status:'Kosong';
+      const cell=document.createElement('button');
+      cell.type='button';
+      cell.className='rack-location-cell '+getLocationStatusClass(status);
+      cell.dataset.locationId=locationId;
+      cell.title=locationId+' • '+status;
+
+      const idText=document.createElement('strong');
+      idText.textContent=positionText+'-'+level;
+
+      const statusText=document.createElement('span');
+      statusText.textContent=status;
+
+      cell.appendChild(idText);
+      cell.appendChild(statusText);
+
+      cell.onclick=function(){
+        grid.querySelectorAll('.rack-location-cell').forEach(function(el){
+          el.classList.remove('selected');
+        });
+        cell.classList.add('selected');
+        loadLocationDetail(locationId,cell);
+      };
+
+      grid.appendChild(cell);
+    });
+  });
+
+  scroll.appendChild(grid);
+  section.appendChild(scroll);
+  container.appendChild(section);
+
+  const detailPanel=document.createElement('div');
+  detailPanel.id='locationDetailPanel';
+  container.appendChild(detailPanel);
+
+  const qrSection=document.createElement('details');
+  qrSection.className='qr-position-list';
+
+  const qrSummary=document.createElement('summary');
+  qrSummary.textContent='QR per Posisi';
+  qrSection.appendChild(qrSummary);
+
+  const qrButtons=document.createElement('div');
+  qrButtons.className='qr-position-buttons';
+
+  item.positions.slice().sort(function(a,b){return Number(a)-Number(b);}).forEach(function(position){
+    const button=document.createElement('button');
+    button.className='btn btn-secondary';
+    button.textContent='QR '+position;
+    button.onclick=function(){
+      generatePositionQR(rack,position,item.levels);
+    };
+    qrButtons.appendChild(button);
+  });
+
+  qrSection.appendChild(qrButtons);
+  container.appendChild(qrSection);
+
+  document.getElementById('qrResult').innerHTML='';
+  document.getElementById('detailModal').classList.add('show');
+
+  // Muat stok seluruh rack satu kali
+  loadRackStock(rack);
+}
+
+
+
+
+function loadRackStock(rack){
+  if(rackStockLoading[rack]){
+    rackStockCallbacks[rack]=true;
+    return;
+  }
+
+  const item=rackDatabase.find(function(data){
+    return data.rack===rack;
+  });
+  if(!item)return;
+
+  const allCached=(item.locations||[]).length>0&&
+    item.locations.every(function(location){
+      return !!locationStockCache[location.id];
+    });
+
+  if(allCached){
+    const modal=document.getElementById('detailModal');
+
+    if(modal.classList.contains('show')&&
+       document.getElementById('detailTitle').textContent===rack){
+      const selected=modal.querySelector('.rack-location-cell.selected');
+
+      if(selected){
+        loadLocationDetail(selected.dataset.locationId,selected);
+      }
+    }
+    return;
+  }
+
+  rackStockLoading[rack]=true;
+
+  const token=localStorage.getItem('warehouseToken');
+
+  google.script.run
+    .withSuccessHandler(function(response){
+      rackStockLoading[rack]=false;
+
+      if(!response||!response.success){
+        delete rackStockCallbacks[rack];
+        showMessage(response&&response.message?response.message:'Gagal memuat stok rack.','error');
+        return;
+      }
+
+      const fresh=response.locations||{};
+
+      Object.keys(fresh).forEach(function(locationId){
+        locationStockCache[locationId]=fresh[locationId];
+
+        const location=(item.locations||[]).find(function(entry){
+          return entry.id===locationId;
+        });
+
+        if(location){
+          location.status=fresh[locationId].status||location.status||'Kosong';
+        }
+      });
+
+      const modal=document.getElementById('detailModal');
+
+      if(modal.classList.contains('show')&&
+         document.getElementById('detailTitle').textContent===rack){
+        modal.querySelectorAll('.rack-location-cell').forEach(function(cell){
+          const data=locationStockCache[cell.dataset.locationId];
+          if(!data)return;
+
+          const status=data.status||'Kosong';
+
+          cell.className='rack-location-cell '+getLocationStatusClass(status)+
+            (cell.classList.contains('selected')?' selected':'');
+          cell.querySelector('span').textContent=status;
+          cell.title=cell.dataset.locationId+' • '+status;
+        });
+
+        const selected=modal.querySelector('.rack-location-cell.selected');
+
+        if(selected){
+          loadLocationDetail(selected.dataset.locationId,selected);
+        }
+      }
+
+      delete rackStockCallbacks[rack];
+    })
+    .withFailureHandler(function(error){
+      rackStockLoading[rack]=false;
+      delete rackStockCallbacks[rack];
+      showMessage('Gagal memuat stok rack: '+error.message,'error');
+    })
+    .getRackStockDetails(rack,token);
+}
+
+
+
+function getLocationStatusClass(status){
+  const classes={
+    'Kosong':'status-kosong',
+    'Tersedia':'status-tersedia',
+    'Hampir Penuh':'status-hampir-penuh',
+    'Penuh':'status-penuh'
+  };
+  return classes[status]||'status-kosong';
+}
+
+
+
+
+function loadLocationDetail(locationId,cell){
+  const panel=document.getElementById('locationDetailPanel');
+  const cached=locationStockCache[locationId];
+
+  if(cached){
+    renderLocationDetail({
+      locationId:locationId,
+      rollCount:cached.rollCount,
+      totalMeter:cached.totalMeter,
+      totalYard:cached.totalYard,
+      rolls:cached.rolls
+    },cell);
+    return;
+  }
+
+  panel.innerHTML='<div class="location-detail-panel">Memuat data lokasi pertama kali...</div>';
+
+  const rackName=locationId.replace(/\s+\d{2}-[A-Z]$/,'');
+  loadRackStock(rackName);
+}
+
+
+
+function renderLocationDetail(data,cell){
+  const panel=document.getElementById('locationDetailPanel');
+  panel.innerHTML='';
+
+  const box=document.createElement('div');
+  box.className='location-detail-panel';
+
+  const header=document.createElement('div');
+  header.className='location-detail-header';
+
+  const titleWrap=document.createElement('div');
+  const title=document.createElement('div');
+  title.className='location-detail-title';
+  title.textContent=data.locationId;
+
+  const subtitle=document.createElement('div');
+  subtitle.className='location-detail-subtitle';
+  subtitle.textContent='Detail stok berdasarkan Location ID';
+
+  titleWrap.appendChild(title);
+  titleWrap.appendChild(subtitle);
+  header.appendChild(titleWrap);
+  box.appendChild(header);
+
+  const summary=document.createElement('div');
+  summary.className='location-summary';
+
+  [
+    [''+data.rollCount,'Jumlah Roll'],
+    [formatLocationNumber(data.totalMeter)+' m','Total Meter'],
+    [formatLocationNumber(data.totalYard)+' yd','Total Yard']
+  ].forEach(function(item){
+    const card=document.createElement('div');
+    card.className='location-summary-box';
+
+    const value=document.createElement('strong');
+    value.textContent=item[0];
+
+    const label=document.createElement('span');
+    label.textContent=item[1];
+
+    card.appendChild(value);
+    card.appendChild(label);
+    summary.appendChild(card);
+  });
+
+  box.appendChild(summary);
+
+  const statusRow=document.createElement('div');
+  statusRow.className='location-status-row';
+
+  const statusLabel=document.createElement('label');
+  statusLabel.textContent='Status lokasi:';
+  statusLabel.style.fontSize='13px';
+  statusLabel.style.fontWeight='bold';
+
+  const select=document.createElement('select');
+  select.id='locationStatusSelect';
+
+  ['Kosong','Tersedia','Hampir Penuh','Penuh'].forEach(function(status){
+    const option=document.createElement('option');
+    option.value=status;
+    option.textContent=status;
+    select.appendChild(option);
+  });
+
+  const rackName=data.locationId.replace(/\s+\d{2}-[A-Z]$/,'');
+  const rack=rackDatabase.find(function(item){return item.rack===rackName;});
+  const location=rack&&rack.locations?rack.locations.find(function(item){
+    return item.id===data.locationId;
+  }):null;
+
+  select.value=location&&location.status?location.status:'Kosong';
+
+  const saveButton=document.createElement('button');
+  saveButton.className='btn btn-primary';
+  saveButton.textContent='SIMPAN STATUS';
+  saveButton.onclick=function(){
+    saveLocationStatus(data,select.value,cell,select,saveButton);
+  };
+
+  statusRow.appendChild(statusLabel);
+  statusRow.appendChild(select);
+  statusRow.appendChild(saveButton);
+  box.appendChild(statusRow);
+
+  const rollTitle=document.createElement('div');
+  rollTitle.className='rack-map-title';
+  rollTitle.style.marginTop='18px';
+  rollTitle.textContent='Daftar Roll';
+  box.appendChild(rollTitle);
+
+  if(!data.rolls||!data.rolls.length){
+    const empty=document.createElement('div');
+    empty.className='location-roll-empty';
+    empty.textContent='Belum ada roll tercatat di lokasi ini.';
+    box.appendChild(empty);
+  }else{
+    const tableWrap=document.createElement('div');
+    tableWrap.className='location-roll-table-wrap';
+
+    const table=document.createElement('table');
+    table.className='location-roll-table';
+
+    const thead=document.createElement('thead');
+    const headRow=document.createElement('tr');
+
+    ['Roll ID','Produk','Warna','Grade','Status Roll','Meter'].forEach(function(label){
+      const th=document.createElement('th');
+      th.textContent=label;
+      headRow.appendChild(th);
+    });
+
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody=document.createElement('tbody');
+
+    data.rolls.forEach(function(roll){
+      const row=document.createElement('tr');
+
+      [
+        roll.rollId,
+        roll.product||roll.sku||'-',
+        roll.color||'-',
+        roll.grade||'-',
+        roll.status||'-',
+        formatLocationNumber(roll.meter)
+      ].forEach(function(value){
+        const td=document.createElement('td');
+        td.textContent=value===null||value===undefined||value===''?'-':String(value);
+        row.appendChild(td);
+      });
+
+      tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
+    box.appendChild(tableWrap);
+  }
+
+  panel.appendChild(box);
+}
+
+function formatLocationNumber(value){
+  return (Number(value)||0).toLocaleString('id-ID',{
+    maximumFractionDigits:2
+  });
+}
+
+
+
+function saveLocationStatus(data,status,cell,select,button){
+  if(status==='Kosong'&&data.rollCount>0){
+    const confirmEmpty=confirm(
+      'Perhatian! Lokasi '+data.locationId+' masih memiliki '+
+      data.rollCount+' roll dengan total '+formatLocationNumber(data.totalMeter)+
+      ' meter.\n\nApakah kamu yakin ingin mengubah status menjadi Kosong?'
+    );
+
+    if(!confirmEmpty)return;
+  }
+
+  const token=localStorage.getItem('warehouseToken');
+  const previousStatus=cell.className;
+  const previousText=cell.querySelector('span').textContent;
+
+  button.disabled=true;
+  button.textContent='MENYIMPAN...';
+
+  google.script.run
+    .withSuccessHandler(function(response){
+      button.disabled=false;
+      button.textContent='SIMPAN STATUS';
+
+      if(!response||!response.success){
+        showMessage(response&&response.message?response.message:'Gagal menyimpan status.','error');
+        return;
+      }
+
+      // Update tampilan kotak lokasi
+      cell.className='rack-location-cell '+getLocationStatusClass(status)+' selected';
+      cell.querySelector('span').textContent=status;
+      cell.title=data.locationId+' • '+status;
+
+      // Update status di rackDatabase
+      const rackName=data.locationId.replace(/\s+\d{2}-[A-Z]$/,'');
+      const rack=rackDatabase.find(function(item){
+        return item.rack===rackName;
+      });
+
+      if(rack&&rack.locations){
+        const location=rack.locations.find(function(item){
+          return item.id===data.locationId;
+        });
+
+        if(location)location.status=status;
+      }
+
+      // Update cache agar tampilan berikutnya tetap konsisten
+      if(locationStockCache[data.locationId]){
+        locationStockCache[data.locationId].status=status;
+      }
+
+      // Sinkronkan pilihan status di panel detail
+      if(select)select.value=status;
+
+      showMessage(
+        'Status '+data.locationId+' berhasil diubah menjadi '+status+'.',
+        'success'
+      );
+    })
+    .withFailureHandler(function(error){
+      cell.className=previousStatus;
+      cell.querySelector('span').textContent=previousText;
+
+      button.disabled=false;
+      button.textContent='SIMPAN STATUS';
+
+      showMessage('Gagal menyimpan status: '+error.message,'error');
+    })
+    .updateLocationStatus(data.locationId,status,token);
+}
+
+function closeDetailModal(){
+  document.getElementById('detailModal').classList.remove('show');
+}
+
+function generatePositionQR(rack,position,levels){
+  const results=document.getElementById('qrResult');
+  results.innerHTML='<div style="text-align:center;padding:15px;color:#777">Membuat QR...</div>';
+
+  const ids=levels.map(function(level){
+    return rack+' '+position+'-'+level;
+  });
+
+  results.innerHTML='';
+
+  ids.forEach(function(locationId,index){
+    generateLabel(locationId,'Rak',levels[index],index);
+  });
+}
+
+async function generateLabel(locationId,type,level,index){
+  const wrapper=document.createElement('div');
+  wrapper.className='qr-item';
+
+  const name=document.createElement('div');
+  name.className='qr-name';
+  name.textContent=locationId;
+
+  const preview=document.createElement('div');
+  preview.className='qr-preview';
+
+  const qr=document.createElement('div');
+  qr.style.display='none';
+  document.body.appendChild(qr);
+
+  new QRCode(qr,{
+    text:locationId,
+    width:300,
+    height:300,
+    correctLevel:QRCode.CorrectLevel.M
+  });
+
+  await new Promise(function(resolve){
+    setTimeout(resolve,100);
+  });
+
+  const qrCanvas=qr.querySelector('canvas');
+
+  if(!qrCanvas){
+    qr.remove();
+    return;
+  }
+
+  try{
+    await document.fonts.load('450px "Bebas Neue"');
+  }catch(e){}
+
+  const canvas=document.createElement('canvas');
+  canvas.width=2000;
+  canvas.height=550;
+
+  const ctx=canvas.getContext('2d');
+
+  // BACKGROUND
+  ctx.fillStyle='#AD2020';
+  ctx.fillRect(0,0,2000,550);
+
+  const gradient=ctx.createLinearGradient(0,0,0,550);
+  gradient.addColorStop(0.25,'rgba(0,0,0,0)');
+  gradient.addColorStop(1,'rgba(0,0,0,0.25)');
+  ctx.fillStyle=gradient;
+  ctx.fillRect(0,0,2000,550);
+
+  // BOX RAK
+  roundRect(ctx,49,125,172,120,10,'#fff');
+
+  // RAK VECTOR
+  drawRak(ctx);
+
+  // LOCATION ID
+  const displayId=locationId
+    .replace(/^RACK\s*/i,'')
+    .replace(/\s+/g,'')
+    .replace(/^([A-Z])(\d)/,'$1 $2');
+
+  ctx.fillStyle='#fff';
+  ctx.font='450px "Bebas Neue",sans-serif';
+  ctx.textAlign='left';
+  ctx.textBaseline='alphabetic';
+  ctx.fillText(displayId,226.4,435);
+
+  // BOX QR
+  roundRect(ctx,1284.53,50,665.47,450,50,'#fff');
+
+  // ARROW
+  drawArrow(ctx,String(level||'').toUpperCase()==='A'?'down':'up');
+
+  // QR
+  ctx.drawImage(qrCanvas,1504,104,342,342);
+
+  preview.appendChild(canvas);
+
+  const button=document.createElement('button');
+  button.className='btn btn-download';
+  button.textContent='⬇ DOWNLOAD '+displayId;
+
+  button.onclick=function(){
+    const link=document.createElement('a');
+    link.download=displayId.replace(/[^a-zA-Z0-9_-]/g,'_')+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  };
+
+  wrapper.appendChild(preview);
+  wrapper.appendChild(name);
+  wrapper.appendChild(button);
+
+  document.getElementById('qrResult').appendChild(wrapper);
+
+  qr.remove();
+}
+
+function roundRect(ctx,x,y,w,h,r,color){
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawRak(ctx){
+  ctx.fillStyle='#993333';
+  ctx.font='450 100px "Bebas Neue",sans-serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText('RAK',135,193);
+}
+
+function drawArrow(ctx,direction){
+  const path=direction==='down'
+    ?new Path2D('M1382.26 330V120H1402.26V330H1450L1392.26 430L1334.53 330H1382.26Z')
+    :new Path2D('M1402.26 220L1402.26 430L1382.26 430L1382.26 220L1334.53 220L1392.26 120L1450 220L1402.26 220Z');
+
+  ctx.fillStyle='#993333';
+  ctx.fill(path);
+}
+
+function showMessage(message,type){
+  const box=document.getElementById('message');
+  box.textContent=message;
+  box.className=type;
+  box.style.display='block';
+
+  setTimeout(function(){
+    box.style.display='none';
+  },5000);
+}
+
+function escapeHtml(value){
+  return String(value||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+loadRacks();
+</script>
+
+</body>
+</html>
