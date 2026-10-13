@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif!important;background:#f5f5f5;color:#222}
+    .container{max-width:900px;margin:24px auto;padding:16px}
+    .card{background:#fff;border-radius:14px;padding:24px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    h2{font-size:23px;margin:0 0 10px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .input-group{margin-bottom:14px}
+    .label{font-size:13px;font-weight:bold;margin-bottom:6px}
+    .required{font-size:11px;font-weight:bold;color:#b02a37;background:#f8d7da;padding:3px 7px;border-radius:5px;margin-left:5px}
+    .optional{font-size:10px;color:#777;font-weight:normal;margin-left:5px}
+    .section-note{font-size:13px;color:#888;line-height:1.5;margin:0 0 18px}
+    .form-section{border-top:1px solid #e5e7eb;padding-top:18px;margin-top:20px}
+    .form-section-title{font-size:16px;font-weight:bold;margin-bottom:14px}
+    input,select{width:100%;padding:11px 12px;border:1px solid #ccc;border-radius:7px;background:#fff;font-family:Arial,sans-serif;font-size:14px}
+    input:focus,select:focus{outline:none;border-color:#198754}
+    button{width:100%;border:0;border-radius:8px;padding:12px;font-size:14px;font-weight:bold;cursor:pointer;margin-top:8px}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .btn-save{background:#198754;color:#fff;padding:14px}
+    .btn-save:hover{background:#157347}
+    .btn-add-color{background:#f3f4f6;color:#333;border:1px solid #ddd}
+    .btn-add-color:hover{background:#e9ecef}
+    .color-column-head{display:grid;grid-template-columns:36px minmax(0,2fr) minmax(100px,.8fr) 38px;gap:10px;padding:10px 8px;background:#f3f4f6;border-radius:7px;font-size:12px;font-weight:bold;color:#6b7280}
+    .color-row{display:grid;grid-template-columns:36px minmax(0,2fr) minmax(100px,.8fr) 38px;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #eee}
+    .color-number{text-align:center;font-size:13px;color:#666}
+    .color-row input{min-width:0}
+    .btn-remove-color{width:36px;height:36px;padding:0;margin:0;display:flex;align-items:center;justify-content:center;background:#fdeaea;color:#b42323;font-size:20px}
+    .btn-remove-color:hover{background:#f8d7da}
+    .total-roll-box{display:flex;justify-content:space-between;align-items:center;padding:14px 0;font-size:14px;color:#666}
+    .total-roll-box strong{font-size:20px;color:#222}
+    .location-input{display:grid;grid-template-columns:1fr 48px;gap:8px;margin-bottom:10px}
+    .location-input input{font-weight:500}
+    .btn-location-scan{margin:0;background:#b21f1f;color:#fff;border:0;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0}
+    .btn-location-scan svg{width:22px;height:22px}
+    .location-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .location-grid select{min-width:0;padding:10px 7px;font-size:12px}
+    #message{margin-top:16px;padding:12px;border-radius:8px;display:none;font-size:14px;line-height:1.5}
+    #message.success{background:#e8f7e8;color:#216b21}
+    #message.error{background:#fdeaea;color:#a02020}
+    .result{display:none}
+    .result .section-title{font-size:17px;font-weight:bold;color:#198754;margin-bottom:15px}
+    .result .section-note{color:#6c757d}
+    .roll-list{max-height:300px;overflow-y:auto;border:1px solid #ddd;border-radius:8px}
+    .roll-item{padding:10px 12px;border-bottom:1px solid #eee;font-size:14px}
+    .roll-item:last-child{border-bottom:0}
+    .btn-print{background:#eee;color:#222}
+    .btn-print:hover{background:#e2e2e2}
+    @media(max-width:600px){
+      .container{margin:10px auto;padding:12px}
+      .card{padding:16px}
+      .row{grid-template-columns:1fr;gap:0}
+      .color-row,.color-column-head{grid-template-columns:26px minmax(0,1.5fr) minmax(68px,.8fr) 32px;gap:6px;padding-left:4px;padding-right:4px}
+      .color-column-head{font-size:10px}
+      .color-row input{padding:10px 6px;font-size:13px}
+      .btn-remove-color{width:30px;height:34px}
+      .location-grid{grid-template-columns:1fr 1fr}
+    }
+  </style>
+</head>
+<body>
+
+<script>
+window.headerTitle='Barang Masuk';
+</script>
+<?!= include('header'); ?>
+
+<div class="container">
+  <div class="card">
+    <h2>📦 Barang Masuk</h2>
+    <div class="section-note">Input data kain dan jumlah roll per warna. Panjang kain diinput saat Stock Opname.</div>
+
+    <div class="row">
+      <div class="input-group">
+        <div class="label">Kategori <span class="required">WAJIB</span></div>
+        <select id="category">
+          <option value="">Pilih Kategori</option>
+          <option value="Dyeing">Dyeing</option>
+          <option value="Printing">Printing</option>
+          <option value="Sublim (DGP)">Sublim (DGP)</option>
+          <option value="Putihan">Putihan</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <div class="label">Jenis Kain <span class="required">WAJIB</span></div>
+        <input type="text" id="fabricType" placeholder="Contoh: Polymicro">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="input-group">
+        <div class="label">Kode Desain</div>
+        <input type="text" id="design" placeholder="D#1-0102">
+      </div>
+      <div class="input-group">
+        <div class="label">Nama Produk <span class="required">WAJIB</span></div>
+        <input type="text" id="product" placeholder="Polymicro Dyed FN">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="input-group">
+        <div class="label">Lebar (CM) <span class="required">WAJIB</span></div>
+        <input type="number" id="width" min="1" step="any" placeholder="240">
+      </div>
+      <div class="input-group">
+        <div class="label">GSM</div>
+        <input type="number" id="gsm" min="0" step="any" placeholder="100">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">Warna & Jumlah Roll</div>
+      <div class="color-column-head">
+        <span>No.</span>
+        <span>Warna</span>
+        <span>Jumlah Roll</span>
+        <span></span>
+      </div>
+      <div id="colorList"></div>
+      <button type="button" class="btn-add-color" onclick="addColorRow()">＋ Tambah Warna</button>
+      <div class="total-roll-box">
+        <span>Total Roll</span>
+        <strong id="totalRoll">0 roll</strong>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">Lokasi Penyimpanan <span class="optional">OPSIONAL</span></div>
+      <div class="location-input">
+        <input type="text" id="locationId" placeholder="Pilih atau scan lokasi" readonly>
+        <button type="button" class="btn-location-scan" onclick="openReceivingLocationScanner()" aria-label="Scan QR lokasi">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+            <path d="M14 14h3v3h-3z"></path>
+            <path d="M18 18h3v3h-3z"></path>
+            <path d="M18 14h3"></path>
+            <path d="M14 18v3"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="location-grid">
+        <select id="locationType" onchange="changeReceivingLocationType()">
+          <option value="">Pilih Tipe</option>
+          <option value="Rak">Rak</option>
+        </select>
+        <select id="locationRack" onchange="changeReceivingRack()" disabled>
+          <option value="">Pilih Rack</option>
+        </select>
+        <select id="locationPosition" onchange="changeReceivingPosition()" disabled>
+          <option value="">Pilih Posisi</option>
+        </select>
+        <select id="locationLevel" onchange="changeReceivingLevel()" disabled>
+          <option value="">Pilih Level</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-save" id="saveButton" onclick="createRolls()">＋ TAMBAH ROLL</button>
+    <div id="message" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="card result" id="result">
+    <div class="section-title">✓ ROLL BERHASIL DIBUAT</div>
+    <div class="section-note">Roll berikut berhasil ditambahkan ke database.</div>
+    <div class="roll-list" id="rollList"></div>
+    <button class="btn-print" onclick="printBarcode()">🖨️ PRINT BARCODE</button>
+  </div>
+</div>
+
+<script>
+let receivingLocationMaster=[];
+let createdRollIds=[];
+let colorRowCounter=0;
+
+function addColorRow(color='',quantity=''){
+  colorRowCounter++;
+  const id=colorRowCounter;
+  const container=document.getElementById('colorList');
+  const card=document.createElement('div');
+  card.className='color-row';
+  card.dataset.colorId=id;
+  card.innerHTML=`
+    <span class="color-number"></span>
+    <input type="text" class="color-name" placeholder="Contoh: Lilac" aria-label="Nama warna">
+    <input type="number" class="color-quantity" min="1" step="1" placeholder="Jumlah" aria-label="Jumlah roll">
+    <button type="button" class="btn-remove-color" title="Hapus warna" aria-label="Hapus warna">×</button>
+  `;
+  card.querySelector('.color-name').value=color;
+  card.querySelector('.color-quantity').value=quantity;
+  card.querySelector('.btn-remove-color').addEventListener('click',function(){
+    if(container.children.length<=1){
+      showMessage('Minimal harus ada satu warna.','error');
+      return;
+    }
+    card.remove();
+    updateColorRowLabels();
+    updateTotalRoll();
+    document.getElementById('result').style.display='none';
+  });
+  card.querySelectorAll('input').forEach(function(input){
+    input.addEventListener('input',function(){
+      updateTotalRoll();
+      document.getElementById('result').style.display='none';
+    });
+  });
+  container.appendChild(card);
+  updateColorRowLabels();
+  updateTotalRoll();
+}
+
+function updateColorRowLabels(){
+  document.querySelectorAll('#colorList .color-row').forEach(function(row,index){
+    row.querySelector('.color-number').textContent=index+1;
+  });
+}
+
+function updateTotalRoll(){
+  const rows=document.querySelectorAll('#colorList .color-row');
+  let total=0;
+  rows.forEach(function(row){
+    const value=row.querySelector('.color-quantity').value;
+    const quantity=Number(value);
+    if(value&&Number.isInteger(quantity)&&quantity>0)total+=quantity;
+  });
+  document.getElementById('totalRoll').textContent=total+' roll';
+}
+
+function loadReceivingLocations(){
+  google.script.run
+    .withSuccessHandler(function(locations){
+      receivingLocationMaster=locations||[];
+    })
+    .withFailureHandler(function(error){
+      console.error('Gagal memuat LOCATION_MASTER:',error);
+    })
+    .getLocationMaster();
+}
+
+function changeReceivingLocationType(){
+  const type=document.getElementById('locationType').value;
+  const rack=document.getElementById('locationRack');
+  const position=document.getElementById('locationPosition');
+  const level=document.getElementById('locationLevel');
+  rack.innerHTML='<option value="">Pilih Rack</option>';
+  position.innerHTML='<option value="">Pilih Posisi</option>';
+  level.innerHTML='<option value="">Pilih Level</option>';
+  rack.disabled=true;
+  position.disabled=true;
+  level.disabled=true;
+  document.getElementById('locationId').value='';
+  if(type!=='Rak')return;
+  rack.disabled=false;
+  const racks=[...new Set(receivingLocationMaster.filter(function(item){return item.type==='Rak';}).map(function(item){return item.rack;}))];
+  racks.forEach(function(item){
+    if(!item)return;
+    const option=document.createElement('option');
+    option.value=item;
+    option.textContent=item;
+    rack.appendChild(option);
+  });
+}
+
+function changeReceivingRack(){
+  const rack=document.getElementById('locationRack').value;
+  const position=document.getElementById('locationPosition');
+  const level=document.getElementById('locationLevel');
+  position.innerHTML='<option value="">Pilih Posisi</option>';
+  level.innerHTML='<option value="">Pilih Level</option>';
+  position.disabled=true;
+  level.disabled=true;
+  document.getElementById('locationId').value='';
+  if(!rack)return;
+  position.disabled=false;
+  const positions=[...new Set(receivingLocationMaster.filter(function(item){return item.type==='Rak'&&item.rack===rack;}).map(function(item){return item.position;}))];
+  positions.forEach(function(item){
+    if(!item)return;
+    const option=document.createElement('option');
+    option.value=item;
+    option.textContent=item;
+    position.appendChild(option);
+  });
+}
+
+function changeReceivingPosition(){
+  const rack=document.getElementById('locationRack').value;
+  const position=document.getElementById('locationPosition').value;
+  const level=document.getElementById('locationLevel');
+  level.innerHTML='<option value="">Pilih Level</option>';
+  level.disabled=true;
+  document.getElementById('locationId').value='';
+  if(!rack||!position)return;
+  level.disabled=false;
+  const levels=receivingLocationMaster.filter(function(item){return item.type==='Rak'&&item.rack===rack&&item.position===position;}).map(function(item){return item.level;});
+  levels.forEach(function(item){
+    if(!item)return;
+    const option=document.createElement('option');
+    option.value=item;
+    option.textContent=item;
+    level.appendChild(option);
+  });
+}
+
+function changeReceivingLevel(){
+  const rack=document.getElementById('locationRack').value;
+  const position=document.getElementById('locationPosition').value;
+  const level=document.getElementById('locationLevel').value;
+  document.getElementById('locationId').value='';
+  if(!rack||!position||!level)return;
+  const found=receivingLocationMaster.find(function(item){
+    return item.type==='Rak'&&item.rack===rack&&item.position===position&&item.level===level;
+  });
+  if(found)document.getElementById('locationId').value=found.id;
+}
+
+function openReceivingLocationScanner(){
+  const win=window.open('','_blank');
+  if(!win){
+    showMessage('Browser memblokir popup. Izinkan popup untuk halaman ini.','error');
+    return;
+  }
+  win.document.open();
+  win.document.write('<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Scan QR Rak</title><style>body{margin:0;padding:15px;font-family:Arial;background:#111;color:white;text-align:center}h2{margin:10px 0}#qr-reader{width:100%;max-width:450px;margin:20px auto}.info{font-size:14px;color:#ccc;margin-top:20px}</style></head><body><h2>Scan QR Rak</h2><div id="qr-reader"></div><div class="info" id="info">Memuat scanner...</div></body></html>');
+  win.document.close();
+  const script=win.document.createElement('script');
+  script.src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+  script.onload=function(){
+    const info=win.document.getElementById('info');
+    if(!win.Html5QrcodeScanner){
+      info.textContent='Scanner gagal dimuat.';
+      return;
+    }
+    info.textContent='Arahkan kamera ke QR Code Rak';
+    const scanner=new win.Html5QrcodeScanner('qr-reader',{
+      fps:15,
+      qrbox:{width:280,height:280},
+      rememberLastUsedCamera:true,
+      supportedScanTypes:[win.Html5QrcodeScanType.SCAN_TYPE_CAMERA,win.Html5QrcodeScanType.SCAN_TYPE_FILE],
+      formatsToSupport:[win.Html5QrcodeSupportedFormats.QR_CODE]
+    },false);
+    scanner.render(function(decodedText){
+      try{
+        win.opener.postMessage({type:'receiving-location-scanned',value:decodedText},'*');
+      }catch(e){}
+      setTimeout(function(){
+        try{scanner.clear();}catch(e){}
+        win.close();
+      },500);
+    },function(errorMessage){});
+  };
+  script.onerror=function(){
+    const info=win.document.getElementById('info');
+    if(info)info.textContent='Gagal memuat scanner. Periksa koneksi internet.';
+  };
+  win.document.head.appendChild(script);
+}
+
+window.addEventListener('message',function(e){
+  if(e.data&&e.data.type==='receiving-location-scanned'&&e.data.value){
+    setReceivingLocation(e.data.value.trim());
+  }
+});
+
+function setReceivingLocation(locationId){
+  const found=receivingLocationMaster.find(function(item){return item.id===locationId;});
+  if(!found){
+    showMessage('QR lokasi "'+locationId+'" tidak ditemukan di LOCATION_MASTER.','error');
+    return;
+  }
+  document.getElementById('locationType').value=found.type;
+  changeReceivingLocationType();
+  document.getElementById('locationRack').value=found.rack;
+  changeReceivingRack();
+  document.getElementById('locationPosition').value=found.position;
+  changeReceivingPosition();
+  document.getElementById('locationLevel').value=found.level;
+  changeReceivingLevel();
+  document.getElementById('locationId').value=found.id;
+  showMessage('Lokasi berhasil dipilih: '+found.id,'success');
+}
+
+function showMessage(message,type){
+  const box=document.getElementById('message');
+  box.textContent=message;
+  box.className=type;
+  box.style.display='block';
+}
+
+function createRolls(){
+  const category=document.getElementById('category').value;
+  const fabricType=document.getElementById('fabricType').value.trim();
+  const design=document.getElementById('design').value.trim();
+  const product=document.getElementById('product').value.trim();
+  const width=document.getElementById('width').value;
+  const gsm=document.getElementById('gsm').value;
+  const location=document.getElementById('locationId').value.trim();
+  const token=localStorage.getItem('warehouseToken');
+
+  if(!category){showMessage('Kategori harus dipilih.','error');return;}
+  if(!fabricType){showMessage('Jenis Kain harus diisi.','error');return;}
+  if(!product){showMessage('Nama Produk harus diisi.','error');return;}
+  if(!width||Number(width)<=0){showMessage('Lebar harus diisi dengan benar.','error');return;}
+
+  const colorRows=Array.from(document.querySelectorAll('#colorList .color-row'));
+  if(!colorRows.length){showMessage('Tambahkan minimal satu warna.','error');return;}
+
+  const colors=[];
+  for(let i=0;i<colorRows.length;i++){
+    const color=colorRows[i].querySelector('.color-name').value.trim();
+    const quantityValue=colorRows[i].querySelector('.color-quantity').value;
+    const quantity=Number(quantityValue);
+    if(!color){showMessage('Nama Warna '+(i+1)+' harus diisi.','error');return;}
+    if(!quantityValue||!Number.isInteger(quantity)||quantity<1){
+      showMessage('Jumlah Roll untuk warna '+color+' harus berupa bilangan bulat minimal 1.','error');
+      return;
+    }
+    colors.push({color:color,quantity:quantity});
+  }
+
+  const saveButton=document.getElementById('saveButton');
+  saveButton.disabled=true;
+  saveButton.textContent='⏳ MEMBUAT ROLL...';
+  document.getElementById('message').style.display='none';
+
+  google.script.run
+    .withSuccessHandler(function(response){
+      saveButton.disabled=false;
+      saveButton.textContent='＋ TAMBAH ROLL';
+      if(!response||!response.success){
+        showMessage(response&&response.message?response.message:'Gagal membuat Roll.','error');
+        return;
+      }
+
+      createdRollIds=response.rollIds||[];
+      document.getElementById('result').style.display='block';
+      const list=document.getElementById('rollList');
+      list.innerHTML='';
+      createdRollIds.forEach(function(rollId){
+        const item=document.createElement('div');
+        item.className='roll-item';
+        item.textContent=rollId;
+        list.appendChild(item);
+      });
+
+      ['category','fabricType','design','product','width','gsm'].forEach(function(id){
+        document.getElementById(id).value='';
+      });
+
+      document.getElementById('colorList').innerHTML='';
+      colorRowCounter=0;
+      addColorRow();
+
+      document.getElementById('locationType').value='';
+      document.getElementById('locationRack').innerHTML='<option value="">Pilih Rack</option>';
+      document.getElementById('locationPosition').innerHTML='<option value="">Pilih Posisi</option>';
+      document.getElementById('locationLevel').innerHTML='<option value="">Pilih Level</option>';
+      document.getElementById('locationRack').disabled=true;
+      document.getElementById('locationPosition').disabled=true;
+      document.getElementById('locationLevel').disabled=true;
+      document.getElementById('locationId').value='';
+
+      showMessage(createdRollIds.length+' Roll berhasil ditambahkan.','success');
+    })
+    .withFailureHandler(function(error){
+      saveButton.disabled=false;
+      saveButton.textContent='＋ TAMBAH ROLL';
+      showMessage('Terjadi error: '+error.message,'error');
+    })
+    .createRolls('',category,fabricType,design,product,colors,width,gsm,location,token);
+}
+
+function printBarcode(){
+  if(!createdRollIds.length)return;
+  google.script.run.withSuccessHandler(function(url){
+    window.open(url+'?page=barcode&rollIds='+encodeURIComponent(createdRollIds.join(',')),'_blank');
+  }).getWebAppUrl();
+}
+
+['category','fabricType','design','product','width','gsm','locationId','locationType','locationRack','locationPosition','locationLevel'].forEach(function(id){
+  const element=document.getElementById(id);
+  if(!element)return;
+  element.addEventListener('input',function(){
+    document.getElementById('result').style.display='none';
+  });
+  element.addEventListener('change',function(){
+    document.getElementById('result').style.display='none';
+  });
+});
+
+addColorRow();
+loadReceivingLocations();
+</script>
+</body>
+</html>
