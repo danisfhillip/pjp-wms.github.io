@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Pergerakan Barang</title>
+    <style>
+      *{box-sizing:border-box}
+      body{margin:0;font-family:Arial,sans-serif !important;background:#f5f5f5;color:#222}
+      .container{max-width:900px;margin:30px auto;padding:20px}
+      .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+      .section-title{font-size:17px;font-weight:bold;margin-bottom:15px}
+      .section-note{font-size:13px;color:#888;margin-top:-8px;margin-bottom:16px}
+      .label{font-size:13px;font-weight:bold;margin-bottom:6px}
+      .required{font-size:11px;font-weight:bold;color:#b02a37;background:#f8d7da;padding:3px 7px;border-radius:5px;margin-left:5px}
+      .scan-row{display:flex;gap:8px}
+
+      h2{margin:0 0 20px}
+      input,select{width:100%;padding:13px;border:1px solid #ccc;border-radius:8px;background:white}
+      textarea{width:100%;min-height:auto;border:1px solid #ccc;border-radius:8px;padding:13px;font-family:Arial,sans-serif;resize:vertical;background:white}
+      button{border:none;border-radius:9px;padding:0 16px;font-size:16px;font-weight:bold;cursor:pointer}
+      button:disabled{opacity:.5;cursor:not-allowed}
+
+      .btn-scan{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#AD2020;color:white;padding:0 16px;font-weight:bold}
+      .btn-search{background:#e9ecef;color:#222;height:44px;padding:0 16px;font-weight:bold}
+      .result-card{background:#f1f3f5;border:2px solid #AD2020}
+
+      .roll-list{display:flex;flex-direction:column;gap:10px}
+      .roll-item{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;position:relative}
+      .roll-name{font-weight:bold;font-size:14px}
+      .roll-id{font-size:12px;color:#666;margin-top:4px}
+      .roll-info{font-size:13px;color:#555;margin-top:5px}
+      .roll-location{font-size:13px;margin-top:7px}
+
+      .remove-btn{position:absolute;right:10px;top:10px;background:#eee;width:28px;height:28px}
+      .location-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+      .input-group{margin-bottom:14px}
+      .location-result{margin-top:10px;padding:10px;border-radius:8px;background:#f3f3f3;font-weight:bold}
+
+      .btn-move{width:100%;height:48px;background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#198754;color:white;font-size:15px;font-weight:bold;margin-top:8px}
+      .btn-move:disabled{opacity:.5;cursor:not-allowed}
+
+      .message{display:none;padding:12px;border-radius:8px;margin-bottom:15px;font-size:14px}
+      .success{background:#e8f7ed;color:#176b35}
+      .error{background:#fdeaea;color:#a52222}
+      .empty{text-align:center;color:#888;padding:20px}
+      .loading{background:#fff3cd;color:#856404}
+
+      @media(max-width:600px){
+        .container{margin:10px auto;padding:12px}
+        /* select{font-size:13px} */
+        .location-grid{grid-template-columns:1fr 1fr 1fr}
+        }
+    </style>
+  </head>
+
+  <body>
+    <script>
+    window.headerTitle='Pergerakan Barang';
+    </script>
+    <?!= include('header'); ?>
+
+    <div class="container">
+      <div class="card">
+        <h2>📦 Pergerakan Barang</h2>
+        <div class="section-note">Pindahkan Roll dari lokasi saat ini ke lokasi tujuan.</div>
+
+        <div class="input-group">
+          <div class="label">Roll ID</div>
+          <div class="scan-row">
+            <textarea id="rollInput" placeholder="Masukkan Roll ID, satu Roll per baris"></textarea>
+            <button class="btn-scan" onclick="openRollScanner()">📷SCAN</button>
+          </div>
+        </div>
+
+        <button class="btn-search" style="width:100%" onclick="addRoll(document.getElementById('rollInput').value)">🔍 TAMBAH ROLL</button>
+      </div>
+
+      <div id="message" class="message"></div>
+
+      <div class="card result-card" id="movementResult" style="display:none;">
+        <div class="section-title">✓ ROLL YANG AKAN DIPINDAHKAN</div>
+        <div class="section-note">Pastikan semua Roll yang dipilih sudah sesuai sebelum dipindahkan.</div>
+
+        <div class="label" style="margin-bottom:10px">Jumlah Roll: <span id="rollCount">0</span></div>
+
+        <div id="rollList" class="roll-list">
+          <div class="empty">Belum ada Roll</div>
+        </div>
+      </div>
+
+      <div class="card" id="locationCard" style="display:none;">
+        <div class="section-title" style="display: flex;align-items: center;">📍 Lokasi Tujuan <span class="required">WAJIB</span></div>
+        <div class="section-note">Pilih lokasi tujuan untuk Roll yang akan dipindahkan.</div>
+
+        <button class="btn-scan" style="height:44px;width:100%;margin-bottom:15px" onclick="openLocationScanner()">📍 SCAN QR LOCATION</button>
+
+        <div class="location-grid">
+          <div>
+            <div class="label">Rak</div>
+            <select id="targetRack" onchange="changeTargetRack()">
+              <option value="">Pilih Rak</option>
+            </select>
+          </div>
+
+          <div>
+            <div class="label">Posisi</div>
+            <select id="targetPosition" onchange="changeTargetPosition()" disabled>
+              <option value="">Pilih Rak dulu</option>
+            </select>
+          </div>
+
+          <div>
+            <div class="label">Level</div>
+            <select id="targetLevel" onchange="changeTargetLevel()" disabled>
+              <option value="">Pilih Posisi dulu</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="targetLocation" class="location-result">Lokasi tujuan belum dipilih</div>
+      </div>
+
+      <div class="card" id="keteranganCard" style="display:none;">
+        <div class="section-title" style="display: flex;align-items: center;">📝 Keterangan <span class="required">WAJIB</span></div>
+        <div class="section-note">Masukkan alasan atau tujuan perpindahan Roll.</div>
+
+        <div class="input-group">
+          <input id="keterangan" placeholder="Contoh: Penataan gudang">
+        </div>
+
+        <div id="keteranganMessage" class="message"></div>
+
+        <button id="moveButton" class="btn-move" onclick="moveRolls()" disabled>🔄 PINDAHKAN ROLL</button>
+      </div>
+
+    </div>
+
+    <script>
+    let movementRolls=[];
+    let locationMaster=[];
+    let selectedLocation='';
+    let movementRollData={};
+    let movementRollDataReady=false;
+    let processingRollIds=[];
+
+    function showMessage(message,type){
+      const box=document.getElementById('message');
+      box.textContent=message;
+      box.className='message '+type;
+      box.style.display='block';
+      setTimeout(function(){box.style.display='none'},4000);
+    }
+
+    function loadLocations(){
+      google.script.run.withSuccessHandler(function(data){
+        locationMaster=data||[];
+        const racks=[...new Set(locationMaster.map(function(x){return x.rack}).filter(Boolean))];
+        const select=document.getElementById('targetRack');
+        racks.forEach(function(rack){
+          const option=document.createElement('option');
+          option.value=rack;
+          option.textContent=rack;
+          select.appendChild(option);
+        });
+      }).getLocationMaster();
+    }
+
+    function loadMovementRollData(){
+      google.script.run.withSuccessHandler(function(response){
+        if(!response||!response.success){
+          showMessage(response?response.message:'Gagal memuat data Roll.','error');
+          return;
+        }
+        movementRollData=response.rolls||{};
+        movementRollDataReady=true;
+      }).withFailureHandler(function(error){
+        showMessage('Gagal memuat data Roll: '+error.message,'error');
+      }).getMovementRollData();
+    }
+
+    function changeTargetRack(){
+      const rack=document.getElementById('targetRack').value;
+      const position=document.getElementById('targetPosition');
+      const level=document.getElementById('targetLevel');
+
+      position.innerHTML='<option value="">Pilih Rak dulu</option>';
+      level.innerHTML='<option value="">Pilih Posisi dulu</option>';
+      position.disabled=true;
+      level.disabled=true;
+      selectedLocation='';
+      document.getElementById('targetLocation').textContent='Lokasi tujuan belum dipilih';
+
+      if(!rack)return;
+
+      position.innerHTML='<option value="">Pilih Posisi</option>';
+      position.disabled=false;
+
+      const positions=[...new Set(locationMaster.filter(function(x){
+        return x.rack===rack;
+      }).map(function(x){return x.position}))];
+
+      positions.forEach(function(pos){
+        const option=document.createElement('option');
+        option.value=pos;
+        option.textContent=pos;
+        position.appendChild(option);
+      });
+    }
+
+    function changeTargetPosition(){
+      const rack=document.getElementById('targetRack').value;
+      const position=document.getElementById('targetPosition').value;
+      const level=document.getElementById('targetLevel');
+
+      level.innerHTML='<option value="">Pilih Posisi dulu</option>';
+      level.disabled=true;
+      selectedLocation='';
+      document.getElementById('targetLocation').textContent='Lokasi tujuan belum dipilih';
+
+      if(!rack||!position)return;
+
+      level.innerHTML='<option value="">Pilih Level</option>';
+      level.disabled=false;
+
+      const levels=locationMaster.filter(function(x){
+        return x.rack===rack&&x.position===position;
+      });
+
+      levels.forEach(function(item){
+        const option=document.createElement('option');
+        option.value=item.level;
+        option.textContent=item.level;
+        level.appendChild(option);
+      });
+    }
+
+    function changeTargetLevel(){
+      const rack=document.getElementById('targetRack').value;
+      const position=document.getElementById('targetPosition').value;
+      const level=document.getElementById('targetLevel').value;
+      selectedLocation=rack&&position&&level?rack+' '+position+'-'+level:'';
+      document.getElementById('targetLocation').textContent=selectedLocation?'📍 Pindah ke: '+selectedLocation:'Lokasi tujuan belum dipilih';
+      updateButton();
+    }
+
+    function addRoll(rollIds){
+      rollIds=String(rollIds||'').split(/[\n,]+/).map(function(x){return x.trim()}).filter(Boolean);
+      if(!rollIds.length)return;
+
+      if(!movementRollDataReady){
+        showMessage('⏳ Data Roll masih dimuat, silakan coba lagi.','loading');
+        return;
+      }
+
+      let added=0;
+      let duplicate=0;
+      let notFound=[];
+
+      rollIds.forEach(function(rollId){
+        const key=rollId.toLowerCase();
+
+        if(processingRollIds.indexOf(key)!==-1)return;
+
+        if(movementRolls.some(function(x){
+          return String(x['Roll ID']).trim().toLowerCase()===key;
+        })){
+          duplicate++;
+          return;
+        }
+
+        const data=movementRollData[key];
+
+        if(!data){
+          notFound.push(rollId);
+          return;
+        }
+
+        processingRollIds.push(key);
+        movementRolls.push(data);
+        processingRollIds=processingRollIds.filter(function(x){return x!==key});
+        added++;
+      });
+
+      renderRolls();
+      document.getElementById('rollInput').value='';
+
+      if(added){
+        document.getElementById('movementResult').style.display='block';
+        document.getElementById('locationCard').style.display='block';
+        document.getElementById('keteranganCard').style.display='block';
+      }
+
+      if(notFound.length){
+        showMessage(added+' Roll ditambahkan. Tidak ditemukan: '+notFound.join(', '),'error');
+      }else if(duplicate){
+        showMessage(added+' Roll ditambahkan. '+duplicate+' Roll sudah ada dalam daftar.','success');
+      }else if(added){
+        showMessage(added+' Roll berhasil ditambahkan.','success');
+      }
+    }
+
+    function renderRolls(){
+      const list=document.getElementById('rollList');
+      document.getElementById('rollCount').textContent=movementRolls.length;
+
+      if(!movementRolls.length){
+        list.innerHTML='<div class="empty">Belum ada Roll</div>';
+        updateButton();
+        return;
+      }
+
+      list.innerHTML='';
+      movementRolls.forEach(function(roll,index){
+        const item=document.createElement('div');
+        item.className='roll-item';
+        item.innerHTML=
+          '<button class="remove-btn" onclick="removeRoll('+index+')">✕</button>'+
+          '<div class="roll-name">'+escapeHtml(roll['Nama Produk']||'-')+' — '+escapeHtml(roll['Warna']||'-')+'</div>'+
+          '<div class="roll-id">Roll ID: '+escapeHtml(roll['Roll ID']||'-')+'</div>'+
+          '<div class="roll-info">'+escapeHtml(roll['Meter']||'-')+' M • Grade '+escapeHtml(roll['Grade']||'-')+'</div>'+
+          '<div class="roll-location">📍 '+escapeHtml(roll['Location ID']||roll['Pallet ID']||'-')+'</div>';
+        list.appendChild(item);
+      });
+
+      updateButton();
+    }
+
+    function removeRoll(index){
+      if(!movementRolls[index])return;
+      const rollId=String(movementRolls[index]['Roll ID']).trim().toLowerCase();
+      processingRollIds=processingRollIds.filter(function(x){return x!==rollId});
+      movementRolls.splice(index,1);
+      renderRolls();
+    }
+
+    function updateButton(){
+      document.getElementById('moveButton').disabled=!(movementRolls.length&&selectedLocation);
+    }
+
+    function moveRolls(){
+      if(!movementRolls.length){
+        showMessage('Belum ada Roll yang dipilih.','error');
+        return;
+      }
+      if(!selectedLocation){
+        showMessage('Lokasi tujuan belum dipilih.','error');
+        return;
+      }
+      const keterangan=document.getElementById('keterangan').value.trim();
+      if(!keterangan){
+        const message=document.getElementById('keteranganMessage');
+        message.textContent='Keterangan wajib diisi.';
+        message.className='message error';
+        message.style.display='block';
+        return;
+      }
+      const ids=movementRolls.map(function(x){return x['Roll ID']});
+      const token=localStorage.getItem('warehouseToken');
+      const button=document.getElementById('moveButton');
+      const targetLocation=selectedLocation;
+      button.disabled=true;
+      button.textContent='⏳ MEMINDAHKAN...';
+
+      google.script.run.withSuccessHandler(function(response){
+        button.textContent='🔄 PINDAHKAN ROLL';
+
+        if(!response||!response.success){
+          showMessage(response?response.message:'Gagal memindahkan Roll.','error');
+          updateButton();
+          return;
+        }
+
+        showMessage(response.count+' Roll berhasil dipindahkan ke '+targetLocation+'.','success');
+
+        movementRolls=[];
+        selectedLocation='';
+        document.getElementById('targetRack').value='';
+        document.getElementById('targetPosition').innerHTML='<option value="">Posisi</option>';
+        document.getElementById('targetPosition').disabled=true;
+        document.getElementById('targetLevel').innerHTML='<option value="">Level</option>';
+        document.getElementById('targetLevel').disabled=true;
+        document.getElementById('targetLocation').textContent='Lokasi tujuan belum dipilih';
+        document.getElementById('keterangan').value='';
+
+        renderRolls();
+
+        document.getElementById('movementResult').style.display='none';
+        document.getElementById('locationCard').style.display='none';
+        document.getElementById('keteranganCard').style.display='none';
+
+        button.textContent='🔄 PINDAHKAN ROLL';
+      }).withFailureHandler(function(error){
+        button.textContent='🔄 PINDAHKAN ROLL';
+        showMessage('Terjadi error: '+error.message,'error');
+        updateButton();
+      }).saveMovement(ids,targetLocation,keterangan,token);
+    }
+
+    function openRollScanner(){
+      const win=window.open('','_blank');
+      if(!win){
+        showMessage('Browser memblokir popup. Izinkan popup untuk halaman ini.','error');
+        return;
+      }
+
+      const html='<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Scan Roll</title><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"><\/script><style>body{margin:0;padding:15px;font-family:Arial;background:#111;color:white;text-align:center}#qr-reader{width:100%;max-width:450px;margin:20px auto}</style></head><body><h2>Scan Roll</h2><div id="qr-reader"></div><script>var scanned=false;var scanner=new Html5QrcodeScanner("qr-reader",{fps:15,qrbox:{width:280,height:280},rememberLastUsedCamera:true,videoConstraints:{facingMode:"environment"},supportedScanTypes:[Html5QrcodeScanType.SCAN_TYPE_CAMERA],formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE,Html5QrcodeSupportedFormats.CODE_128]},false);scanner.render(function(d){if(scanned)return;scanned=true;try{scanner.clear()}catch(e){}try{window.opener.postMessage({type:"movement-roll-scanned",value:d},"*")}catch(e){}setTimeout(function(){window.close()},300)},function(){});<\/script></body></html>';
+
+      win.document.write(html);
+      win.document.close();
+    }
+
+    function openLocationScanner(){
+      const win=window.open('','_blank');
+      if(!win){
+        showMessage('Browser memblokir popup. Izinkan popup untuk halaman ini.','error');
+        return;
+      }
+
+      const html='<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Scan QR Location</title><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"><\/script><style>body{margin:0;padding:15px;font-family:Arial;background:#111;color:white;text-align:center}#qr-reader{width:100%;max-width:450px;margin:20px auto}</style></head><body><h2>Scan QR Location</h2><div id="qr-reader"></div><script>var scanned=false;var scanner=new Html5QrcodeScanner("qr-reader",{fps:15,qrbox:{width:280,height:280},rememberLastUsedCamera:true,videoConstraints:{facingMode:"environment"},supportedScanTypes:[Html5QrcodeScanType.SCAN_TYPE_CAMERA],formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE]},false);scanner.render(function(d){if(scanned)return;scanned=true;try{scanner.clear()}catch(e){}try{window.opener.postMessage({type:"movement-location-scanned",value:d},"*")}catch(e){}setTimeout(function(){window.close()},300)},function(){});<\/script></body></html>';
+
+      win.document.write(html);
+      win.document.close();
+    }
+
+    window.addEventListener('message',function(e){
+      if(e.data&&e.data.type==='movement-roll-scanned'&&e.data.value){
+        addRoll(e.data.value.trim());
+      }
+
+      if(e.data&&e.data.type==='movement-location-scanned'&&e.data.value){
+        setTargetLocation(e.data.value.trim());
+      }
+    });
+
+    function setTargetLocation(locationId){
+      const found=locationMaster.find(function(x){return x.id===locationId});
+
+      if(!found){
+        showMessage('Location tidak ditemukan di LOCATION_MASTER.','error');
+        return;
+      }
+
+      document.getElementById('targetRack').value=found.rack;
+      changeTargetRack();
+      document.getElementById('targetPosition').value=found.position;
+      changeTargetPosition();
+      document.getElementById('targetLevel').value=found.level;
+      selectedLocation=found.id;
+      document.getElementById('targetLocation').textContent='📍 Pindah ke: '+selectedLocation;
+      updateButton();
+    }
+
+    function escapeHtml(value){
+      return String(value).replace(/[&<>"']/g,function(char){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char];
+      });
+    }
+
+    document.getElementById('rollInput').addEventListener('keydown',function(e){
+      if(e.key==='Enter'){
+        e.preventDefault();
+        addRoll(this.value);
+      }
+    });
+
+    loadLocations();
+    loadMovementRollData();
+    </script>
+  </body>
+</html>
