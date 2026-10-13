@@ -1,0 +1,371 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Roll</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif!important;background:#f5f5f5;color:#222}
+    .container{max-width:1100px;margin:30px auto;padding:20px}
+    .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .back{display:inline-flex;align-items:center;gap:5px;border:0;background:none;color:#AD2020;font-size:14px;font-weight:bold;padding:0;margin:0 0 15px;cursor:pointer}
+    .summary{display:flex;align-items:center;justify-content:space-between;gap:15px}
+    .section-title{font-size:17px;font-weight:bold;margin-bottom:6px}
+    .section-note{font-size:13px;margin-bottom:18px;opacity:.7}
+    .summary-badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:7px;background:#e8def8;color:#6f42c1;font-size:12px;font-weight:bold}
+    .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:15px}
+    .search{flex:1;min-width:0;padding:13px;border:1px solid #ccc;border-radius:8px;background:#fff;font-size:14px;outline:none}
+    .search:focus{border-color:#AD2020}
+    .page-size{width:100px;flex-shrink:0;padding:13px;border:1px solid #ccc;border-radius:8px;background:#fff;font-size:14px}
+    .table-wrap{overflow-x:auto;border:1px solid #dee2e6;border-radius:10px}
+    table{width:100%;border-collapse:collapse;min-width:850px}
+    th,td{padding:12px 14px;text-align:left;border-bottom:1px solid #eee;font-size:13px;white-space:nowrap}
+    th{background:#f8f9fa;color:#777;font-size:11px;font-weight:bold}
+    tbody tr:last-child td{border-bottom:0}
+    tbody tr:hover{background:#fafafa}
+    .grade-badge,.status-badge{display:inline-flex;padding:4px 8px;border-radius:6px;font-size:11px}
+    .grade-A,.status-fastmoving{background:#d9ead3;color:#38761d}
+    .grade-A1,.status-slowmoving{background:#ffe599;color:#7f6000}
+    .grade-B,.status-returan{background:#f9cb9c;color:#783f04}
+    .grade-BS,.status-deadstock{background:#f4cccc;color:#660000}
+    .pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:15px}
+    .page-info{font-size:13px;color:#777}
+    .page-buttons{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+    .page-btn{min-width:34px;margin:0;padding:7px 10px;background:#fff;border:1px solid #ddd;color:#333;font-size:13px;border-radius:7px;cursor:pointer}
+    .page-btn.active{background:#AD2020;color:#fff;border-color:#AD2020}
+    .page-btn:disabled{opacity:.4;cursor:not-allowed}
+    .loading,.empty{text-align:center;color:#888;padding:25px}
+    .detail-summary{color:#fff}
+    .detail-summary.available{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#198754}
+    .detail-summary.not-opname{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#AD2020}
+    .detail-summary.outbound{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#6c757d}
+    .view-mode{display:flex;align-items:center;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;padding:2px;gap:2px;flex-shrink:0}
+    .view-mode-btn{display:flex;align-items:center;justify-content:center;gap:5px;width:auto;margin:0;border:0;background:transparent;color:#777;border-radius:6px;padding:9px 12px;font-size:12px;font-weight:bold;cursor:pointer;white-space:nowrap}
+    .view-mode-btn:hover{background:#e9ecef}
+    .view-mode-btn.active{background:#AD2020;color:#fff}
+    .group-row{cursor:pointer}
+    .group-row:hover{background:#f8f8f8}
+    .group-detail-row{display:none;background:#fafafa}
+    .group-detail-row.show{display:table-row}
+    .group-detail{padding:12px 18px 12px 35px!important}
+    .group-detail table{min-width:700px;background:#fff;border:1px solid #e5e5e5;border-radius:7px;overflow:hidden}
+    .group-detail th{background:#f3f3f3}
+    .expand-icon{color:#AD2020;font-size:12px;font-weight:bold}
+    .group-name{font-weight:bold}
+    .group-count{display:inline-block;margin-left:8px;padding:4px 7px;border-radius:5px;background:#e8def8;color:#6f42c1;font-size:11px;font-weight:bold}
+    @media(max-width:750px){
+      .container{margin:10px auto;padding:12px}
+      .toolbar{flex-wrap:wrap}
+      .search{flex-basis:100%;width:100%}
+      .view-mode{flex:1}
+      .view-mode-btn{flex:1;padding:9px 6px}
+      .page-size{width:90px}
+    }
+    @media(max-width:480px){
+      .summary{align-items:flex-start}
+      .toolbar{gap:8px}
+      .view-mode-btn{font-size:11px}
+      .pagination{align-items:stretch;flex-direction:column}
+      .page-buttons{justify-content:center}
+    }
+  </style>
+</head>
+<body>
+<script>window.headerTitle='Detail Roll';</script>
+<?!= include('header'); ?>
+<div class="container">
+  <button class="back" onclick="goBack()">← Kembali ke Dashboard</button>
+  <div class="card detail-summary" id="detailSummary">
+    <div class="summary">
+      <div>
+        <div class="section-title" id="pageTitle">Detail Roll</div>
+        <div class="section-note" style="margin:4px 0 0" id="pageNote">Memuat data...</div>
+      </div>
+      <div class="summary-badge" id="totalData">Memuat...</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="toolbar">
+      <input class="search" id="searchInput" type="text" placeholder="🔍 Cari Roll ID, produk, warna, lokasi..." oninput="searchData()">
+      <div class="view-mode">
+        <button type="button" class="view-mode-btn active" id="rollViewBtn" onclick="setViewMode('roll')">▤ Per Roll</button>
+        <button type="button" class="view-mode-btn" id="groupViewBtn" onclick="setViewMode('group')">▦ Grouping</button>
+      </div>
+      <select class="page-size" id="pageSize" onchange="changePageSize()">
+        <option value="25">25 / 0</option>
+        <option value="50">50 / 0</option>
+        <option value="100">100 / 0</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead id="tableHead">
+          <tr><th>ROLL ID</th><th>NAMA PRODUK</th><th>WARNA</th><th>METER</th><th>YARD</th><th>GRADE</th><th>STATUS</th><th>LOKASI</th></tr>
+        </thead>
+        <tbody id="rollTable">
+          <tr><td colspan="8" class="loading">Memuat data roll...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <div class="page-info" id="pageInfo">Memuat...</div>
+      <div class="page-buttons" id="pageButtons"></div>
+    </div>
+  </div>
+</div>
+<script>
+let detailType='';
+let rollData=[];
+let filteredData=[];
+let currentPage=1;
+let pageSize=25;
+let currentViewMode='roll';
+
+function escapeHtml(value){
+  return String(value??'').replace(/[&<>"']/g,function(char){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char];
+  });
+}
+
+function formatNumber(value){
+  const number=Number(value||0);
+  return number.toLocaleString('id-ID',{maximumFractionDigits:2});
+}
+
+function getNumericValue(value){
+  if(value===null||value===undefined||String(value).trim()==='')return 0;
+  const number=Number(String(value).replace(',','.'));
+  return Number.isFinite(number)?number:0;
+}
+
+function buildGroups(){
+  const groups={};
+  filteredData.forEach(function(row){
+    const product=String(row.product||'-').trim()||'-';
+    const color=String(row.color||'-').trim()||'-';
+    const key=JSON.stringify([product,color]);
+    if(!groups[key]){
+      groups[key]={product:product,color:color,rolls:[],meter:0,yard:0};
+    }
+    groups[key].rolls.push(row);
+    groups[key].meter+=getNumericValue(row.meter);
+    groups[key].yard+=getNumericValue(row.yard);
+  });
+  return Object.values(groups).sort(function(a,b){
+    return a.product.localeCompare(b.product)||a.color.localeCompare(b.color);
+  });
+}
+
+function setViewMode(mode){
+  if(mode!=='roll'&&mode!=='group')return;
+  currentViewMode=mode;
+  currentPage=1;
+  document.getElementById('rollViewBtn').classList.toggle('active',mode==='roll');
+  document.getElementById('groupViewBtn').classList.toggle('active',mode==='group');
+  renderTable();
+}
+
+function updatePageSizeOptions(){
+  const total=currentViewMode==='roll'?filteredData.length:buildGroups().length;
+  const select=document.getElementById('pageSize');
+  Array.from(select.options).forEach(function(option){
+    option.textContent=Math.min(Number(option.value),total)+' / '+total;
+  });
+}
+
+function loadDetail(){
+  detailType='<?= detailType ?>';
+  const summary=document.getElementById('detailSummary');
+  summary.className='card detail-summary '+(detailType==='notOpname'?'not-opname':detailType==='outbound'?'outbound':'available');
+
+  if(detailType==='notOpname'){
+    document.getElementById('pageTitle').textContent='Belum Opname';
+    document.getElementById('pageNote').textContent='Daftar roll yang belum memiliki data opname.';
+  }else if(detailType==='outbound'){
+    document.getElementById('pageTitle').textContent='Barang Keluar Hari Ini';
+    document.getElementById('pageNote').textContent='Daftar roll yang keluar dari gudang hari ini.';
+  }else{
+    document.getElementById('pageTitle').textContent='Stok Tersedia';
+    document.getElementById('pageNote').textContent='Daftar roll yang memiliki stok dan sudah dilakukan opname.';
+  }
+
+  document.getElementById('totalData').textContent='Memuat...';
+  document.getElementById('rollTable').innerHTML='<tr><td colspan="8" class="loading">Memuat data roll...</td></tr>';
+
+  google.script.run
+    .withSuccessHandler(function(response){
+      if(!response||!response.success){
+        showLoadError(response&&response.message?response.message:'Respons data tidak valid.');
+        return;
+      }
+      rollData=Array.isArray(response.data)?response.data:[];
+      filteredData=rollData.slice();
+      currentPage=1;
+      document.getElementById('totalData').textContent=rollData.length+' Roll';
+      renderTable();
+    })
+    .withFailureHandler(function(error){
+      showLoadError(error&&error.message?error.message:String(error||'Kesalahan tidak diketahui.'));
+    })
+    .getDashboardRollDetail(detailType);
+}
+
+function showLoadError(message){
+  document.getElementById('totalData').textContent='Gagal memuat';
+  document.getElementById('pageInfo').textContent='Data gagal dimuat';
+  document.getElementById('pageButtons').innerHTML='';
+  document.getElementById('rollTable').innerHTML='<tr><td colspan="8" class="empty">Gagal memuat data roll. Periksa fungsi getDashboardRollDetail() di Apps Script.<br><br>'+escapeHtml(message)+'</td></tr>';
+}
+
+function renderTable(){
+  const table=document.getElementById('rollTable');
+  const thead=document.getElementById('tableHead');
+  const total=currentViewMode==='roll'?filteredData.length:buildGroups().length;
+  const totalPages=Math.ceil(total/pageSize)||1;
+  if(currentPage>totalPages)currentPage=totalPages;
+
+  if(currentViewMode==='roll'){
+    thead.innerHTML='<tr><th>ROLL ID</th><th>NAMA PRODUK</th><th>WARNA</th><th>METER</th><th>YARD</th><th>GRADE</th><th>STATUS</th><th>LOKASI</th></tr>';
+  }else{
+    thead.innerHTML='<tr><th>NAMA PRODUK</th><th>WARNA</th><th>JUMLAH ROLL</th><th>TOTAL METER</th><th>TOTAL YARD</th><th>DETAIL</th></tr>';
+  }
+
+  if(!total){
+    table.innerHTML='<tr><td colspan="'+(currentViewMode==='roll'?8:6)+'" class="empty">Tidak ada roll yang sesuai.</td></tr>';
+    document.getElementById('pageInfo').textContent='0 data';
+    document.getElementById('pageButtons').innerHTML='';
+    updatePageSizeOptions();
+    return;
+  }
+
+  const start=(currentPage-1)*pageSize;
+  const end=Math.min(start+pageSize,total);
+  let html='';
+
+  if(currentViewMode==='roll'){
+    filteredData.slice(start,end).forEach(function(row){
+      const grade=String(row.grade||'').trim().toUpperCase();
+      const status=String(row.status||'').trim().toLowerCase();
+      html+='<tr>';
+      html+='<td>'+escapeHtml(row.rollId||'-')+'</td>';
+      html+='<td>'+escapeHtml(row.product||'-')+'</td>';
+      html+='<td>'+escapeHtml(row.color||'-')+'</td>';
+      html+='<td>'+escapeHtml(row.meter??'-')+(row.meter!==''&&row.meter!==null&&row.meter!==undefined?' M':'')+'</td>';
+      html+='<td>'+escapeHtml(row.yard??'-')+(row.yard!==''&&row.yard!==null&&row.yard!==undefined?' Yd':'')+'</td>';
+      html+='<td><span class="grade-badge '+gradeClass(grade)+'">'+escapeHtml(grade||'-')+'</span></td>';
+      html+='<td><span class="status-badge '+statusClass(status)+'">'+escapeHtml(row.status||'-')+'</span></td>';
+      html+='<td>'+escapeHtml(row.location||'-')+'</td>';
+      html+='</tr>';
+    });
+  }else{
+    buildGroups().slice(start,end).forEach(function(group,index){
+      const id='detail-group-'+(start+index);
+      html+='<tr class="group-row" onclick="toggleDetailGroup(\''+id+'\')">';
+      html+='<td class="group-name">'+escapeHtml(group.product)+'</td>';
+      html+='<td>'+escapeHtml(group.color)+'</td>';
+      html+='<td><span class="group-count">'+group.rolls.length+' Roll</span></td>';
+      html+='<td>'+formatNumber(group.meter)+' Meter</td>';
+      html+='<td>'+formatNumber(group.yard)+' Yard</td>';
+      html+='<td><span class="expand-icon" id="'+id+'-icon">▶ Lihat Roll</span></td>';
+      html+='</tr>';
+      html+='<tr class="group-detail-row" id="'+id+'"><td colspan="6" class="group-detail">';
+      html+='<table><thead><tr><th>ROLL ID</th><th>METER</th><th>YARD</th><th>GRADE</th><th>STATUS</th><th>LOKASI</th></tr></thead><tbody>';
+      group.rolls.forEach(function(row){
+        const grade=String(row.grade||'').trim().toUpperCase();
+        const status=String(row.status||'').trim().toLowerCase();
+        html+='<tr>';
+        html+='<td>'+escapeHtml(row.rollId||'-')+'</td>';
+        html+='<td>'+escapeHtml(row.meter??'-')+(row.meter!==''&&row.meter!==null&&row.meter!==undefined?' M':'')+'</td>';
+        html+='<td>'+escapeHtml(row.yard??'-')+(row.yard!==''&&row.yard!==null&&row.yard!==undefined?' Yd':'')+'</td>';
+        html+='<td><span class="grade-badge '+gradeClass(grade)+'">'+escapeHtml(grade||'-')+'</span></td>';
+        html+='<td><span class="status-badge '+statusClass(status)+'">'+escapeHtml(row.status||'-')+'</span></td>';
+        html+='<td>'+escapeHtml(row.location||'-')+'</td>';
+        html+='</tr>';
+      });
+      html+='</tbody></table></td></tr>';
+    });
+  }
+
+  table.innerHTML=html;
+  document.getElementById('pageInfo').textContent=(start+1)+'–'+end+' dari '+total+(currentViewMode==='roll'?' Roll':' Grup');
+  renderPagination(totalPages);
+  updatePageSizeOptions();
+}
+
+function toggleDetailGroup(id){
+  const row=document.getElementById(id);
+  const icon=document.getElementById(id+'-icon');
+  if(!row||!icon)return;
+  const show=row.classList.toggle('show');
+  icon.textContent=show?'▼ Tutup Roll':'▶ Lihat Roll';
+}
+
+function searchData(){
+  const keyword=document.getElementById('searchInput').value.trim().toLowerCase();
+  filteredData=rollData.filter(function(row){
+    return !keyword||
+      String(row.rollId||'').toLowerCase().includes(keyword)||
+      String(row.product||'').toLowerCase().includes(keyword)||
+      String(row.color||'').toLowerCase().includes(keyword)||
+      String(row.location||'').toLowerCase().includes(keyword)||
+      String(row.grade||'').toLowerCase().includes(keyword)||
+      String(row.status||'').toLowerCase().includes(keyword);
+  });
+  currentPage=1;
+  renderTable();
+}
+
+function changePageSize(){
+  pageSize=Number(document.getElementById('pageSize').value)||25;
+  currentPage=1;
+  renderTable();
+}
+
+function goPage(page){
+  const total=currentViewMode==='roll'?filteredData.length:buildGroups().length;
+  const totalPages=Math.ceil(total/pageSize)||1;
+  if(page<1||page>totalPages)return;
+  currentPage=page;
+  renderTable();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderPagination(totalPages){
+  const container=document.getElementById('pageButtons');
+  let html='';
+  html+='<button class="page-btn" onclick="goPage('+(currentPage-1)+')" '+(currentPage===1?'disabled':'')+'>‹</button>';
+  let start=Math.max(1,currentPage-2);
+  let end=Math.min(totalPages,start+4);
+  if(end-start<4)start=Math.max(1,end-4);
+  for(let i=start;i<=end;i++){
+    html+='<button class="page-btn '+(i===currentPage?'active':'')+'" onclick="goPage('+i+')">'+i+'</button>';
+  }
+  html+='<button class="page-btn" onclick="goPage('+(currentPage+1)+')" '+(currentPage===totalPages?'disabled':'')+'>›</button>';
+  container.innerHTML=html;
+}
+
+function gradeClass(grade){
+  return grade==='A'?'grade-A':grade==='A1'?'grade-A1':grade==='B'?'grade-B':grade==='BS'?'grade-BS':'';
+}
+
+function statusClass(status){
+  return status==='fastmoving'?'status-fastmoving':status==='slowmoving'?'status-slowmoving':status==='returan'?'status-returan':status==='deadstock'?'status-deadstock':'';
+}
+
+function goBack(){
+  google.script.run
+    .withSuccessHandler(function(url){
+      window.top.location.href=url+'?page=dashboard';
+    })
+    .withFailureHandler(function(error){
+      alert('Gagal kembali ke dashboard: '+(error&&error.message?error.message:error));
+    })
+    .getWebAppUrl();
+}
+
+loadDetail();
+</script>
+</body>
+</html>
