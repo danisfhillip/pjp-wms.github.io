@@ -1,0 +1,175 @@
+<div class="app-header">
+  <div class="header-title" id="headerTitle"></div>
+  <div class="header-actions">
+    <button class="header-menu" onclick="toggleHeaderMenu()">☰</button>
+  </div>
+</div>
+
+<div class="header-dropdown" id="headerDropdown">
+  <div onclick="openPage('home')">🏠 Homepage</div>
+  <div data-permission="Dashboard" onclick="openPage('dashboard')">📊 Dashboard Gudang</div>
+  <div data-permission="Stock" onclick="openPage('stock')">📊 Cek Stok</div>
+  <div data-permission="Admin" onclick="openPage('manage_user')">👤 Manage User</div>
+  <hr>
+  <div data-permission="Receiving" onclick="openPage('receiving')">📦 Barang Masuk</div>
+  <div data-permission="Outbound" onclick="openPage('outbound')">📤 Barang Keluar</div>
+  <hr>
+  <div data-permission="Opname" onclick="openPage('scanner')">📷 Stock Opname</div>
+  <div data-permission="Movement" onclick="openPage('movement')">🔄 Pergerakan Barang</div>
+  <div data-permission="Sample Cut" onclick="openPage('sample_cut')">✂️ Potong Sampel</div>
+  <hr>
+  <div data-permission="Barcode" onclick="openPage('barcode')">🏷️ Print Barcode</div>
+  <div data-permission="Location" onclick="openPage('location')">📍 QR Location</div>
+  <hr>
+  <div onclick="logout()">🚪 Logout</div>
+</div>
+
+<style>
+.app-header{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#AD2020;color:white;padding:12px 20px;font-size:20px;font-weight:bold}
+.header-title{font-size:20px}
+.header-actions{display:flex;align-items:center}
+.header-menu{width:42px;height:42px;border:0;border-radius:10px;background:rgba(0,0,0,.25);color:#fff;font-size:22px;cursor:pointer;padding:0;margin:0}
+.header-dropdown{display:none;position:absolute;top:65px;right:15px;width:230px;background:#fff;color:#222;border-radius:12px;padding:8px;box-shadow:0 8px 25px rgba(0,0,0,.15);z-index:999}
+.header-dropdown.show{display:block}
+.header-dropdown div{padding:12px;border-radius:8px;cursor:pointer}
+.header-dropdown div:hover{background:#f2f2f2}
+</style>
+
+<script>
+window.webAppUrl=__WEB_APP_URL__;
+window.embedMode=new URLSearchParams(window.location.search).get('embed')==='1';
+
+document.getElementById('headerTitle').textContent=window.headerTitle||'Warehouse System';
+
+function toggleHeaderMenu(){
+  const menu=document.getElementById('headerDropdown');
+  if(!menu)return;
+  menu.classList.toggle('show');
+}
+
+document.addEventListener('click',function(e){
+  const menu=document.getElementById('headerDropdown');
+  const button=document.querySelector('.header-menu');
+  if(!menu||!button)return;
+  if(!menu.contains(e.target)&&!button.contains(e.target)){
+    menu.classList.remove('show');
+  }
+});
+
+let soundContext=null;
+
+function playSound(type){
+  try{
+    if(!soundContext)soundContext=new(window.AudioContext||window.webkitAudioContext)();
+    if(soundContext.state==='suspended')soundContext.resume();
+    if(type==='success'){
+      const osc=soundContext.createOscillator();
+      const gain=soundContext.createGain();
+      osc.connect(gain);
+      gain.connect(soundContext.destination);
+      osc.frequency.value=1000;
+      gain.gain.value=1;
+      osc.start();
+      osc.stop(soundContext.currentTime+.12);
+    }else if(type==='error'){
+      [500,350].forEach(function(freq,i){
+        const osc=soundContext.createOscillator();
+        const gain=soundContext.createGain();
+        osc.connect(gain);
+        gain.connect(soundContext.destination);
+        osc.frequency.value=freq;
+        gain.gain.value=3;
+        const start=soundContext.currentTime+i*.14;
+        osc.start(start);
+        osc.stop(start+.1);
+      });
+    }
+  }catch(e){}
+}
+
+function playSuccessSound(){playSound('success')}
+function playErrorSound(){playSound('error')}
+
+function openPage(page){
+  const menu=document.getElementById('headerDropdown');
+  if(menu)menu.classList.remove('show');
+
+  const url=window.webAppUrl+'?page='+encodeURIComponent(page)+(window.embedMode?'&embed=1':'');
+
+  if(window.embedMode){
+    window.location.href=url;
+  }else{
+    window.top.location.href=url;
+  }
+}
+
+function applyPermissions(permissions){
+  document.querySelectorAll('[data-permission]').forEach(function(item){
+    const feature=item.getAttribute('data-permission');
+    item.style.display=permissions&&permissions[feature]===true?'block':'none';
+  });
+}
+
+function checkHeaderSession(){
+  const token=localStorage.getItem('warehouseToken');
+  if(!token){
+    redirectToLogin();
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(result){
+      if(!result.success){
+        localStorage.removeItem('warehouseToken');
+        localStorage.removeItem('warehouseUserId');
+        localStorage.removeItem('warehousePermissions');
+        redirectToLogin();
+        return;
+      }
+
+      localStorage.setItem('warehouseUserId',result.userId);
+      localStorage.setItem('warehousePermissions',JSON.stringify(result.permissions));
+      applyPermissions(result.permissions);
+    })
+    .withFailureHandler(function(){
+      // Jangan logout hanya karena koneksi/server sedang bermasalah.
+    })
+    .getLoginSession(token);
+}
+
+function redirectToLogin(){
+  const url=window.webAppUrl+'?page=login'+(window.embedMode?'&embed=1':'');
+
+  if(window.embedMode){
+    window.location.href=url;
+  }else{
+    window.top.location.href=url;
+  }
+}
+
+function logout(){
+  const token=localStorage.getItem('warehouseToken');
+
+  localStorage.removeItem('warehouseToken');
+  localStorage.removeItem('warehouseUserId');
+  localStorage.removeItem('warehousePermissions');
+  localStorage.removeItem('warehouseWebAppUrl');
+
+  const menu=document.getElementById('headerDropdown');
+  if(menu)menu.classList.remove('show');
+
+  redirectToLogin();
+
+  if(token){
+    google.script.run.logoutUser(token);
+  }
+}
+
+checkHeaderSession();
+
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'){
+    checkHeaderSession();
+  }
+});
+</script>
