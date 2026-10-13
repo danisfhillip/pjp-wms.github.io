@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif !important;background:#f5f5f5;color:#222}
+    h2{margin:0 0 18px}
+
+    .container{max-width:900px;margin:30px auto;padding:20px}
+
+    .search-box{background:white;padding:18px;border-radius:10px;margin-bottom:20px}
+    .label{font-size:13px;color:#666;margin-bottom:6px}
+    .search-row{display:flex;gap:8px}
+
+    input,textarea{flex:1;padding:12px;border:1px solid #ccc;border-radius:6px;font-size:16px;font-family:Arial,sans-serif;resize:none;overflow:hidden;min-height:46px;line-height:1.4}
+    button{border:0;border-radius:6px;padding:12px 18px;font-size:15px;cursor:pointer;background:linear-gradient(180deg, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0.25) 100%), #198754;color:white}
+    button:hover{opacity:.85}
+
+    .message{margin-top:10px;font-size:14px;color:#c00}
+    .print-list{background:white;padding:18px;border-radius:10px;margin-bottom:20px}
+    .roll-list-page{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}
+    .list-title{font-size:14px;font-weight:bold;margin-bottom:10px}
+    .list-item{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #eee;padding:8px 0;font-size:14px}
+    .remove-btn{background:none;color:#dc3545;padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;margin:0}
+    .remove-btn:hover{background:#f8d7da;opacity:1}
+    .remove-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .clear-all-btn{background:#dc3545;padding:7px 12px;font-size:12px;margin:0}
+
+    .preview-wrapper{background:#ddd;padding:20px;border-radius:10px}
+    .preview-nav{display:flex;align-items:center;justify-content:center;gap:15px;margin-top:15px}
+    .preview-nav button{padding:8px 15px;font-size:13px}
+    .preview-nav button:disabled{opacity:.4;cursor:not-allowed}
+    .preview-area{background:#ddd;padding:0;display:flex;justify-content:center;overflow:hidden}
+    #printPage{display:block}
+
+    .print-page{width:166mm;background:#ddd;display:grid;grid-template-columns:80mm 80mm;grid-auto-rows:50mm;column-gap:6mm;row-gap:3mm;padding:0;flex:none}
+    .print-page:last-child{page-break-after:auto;break-after:auto}
+    .preview-scale{transform-origin:top center}
+    
+    @media screen and (max-width:600px){
+      .roll-list-page{font-size:13px}
+      .list-item{font-size:13px}
+      .remove-btn{font-size:10px;padding:5px 9px}
+      .preview-area{width:100%;padding:0;overflow:hidden}
+      #printPage{width:100%;display:flex;justify-content:center}
+      .print-page{transform-origin:top center}
+      .container{margin:10px auto;padding:12px}
+    }
+
+    .label-print{width:80mm;height:50mm;background:white;padding:3mm;position:relative;overflow:hidden;font-family:Arial,sans-serif;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+    .label-main{display:flex;height:38mm;align-items:center}
+    .qr-area{width:30mm;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .qrcode{width:22mm;height:22mm}
+    .qrcode img,.qrcode canvas{width:22mm!important;height:22mm!important}
+    .roll-id{width:22mm;font-size:8.5px;margin-top:1mm;text-align:center;white-space:nowrap;font-weight:bold}
+    
+    .info{flex:1;padding-left:2mm;font-size:9px;line-height:1.5;min-width:0}
+    .info-row{display:flex;min-width:0;white-space:nowrap}
+    .info-label{width:10mm;flex:none}
+    .info-separator{width:2.5mm;flex:none}
+    .info-value{flex:1;min-width:0;white-space:nowrap;overflow:visible;font-weight:600}
+
+    .warning{position:absolute;bottom:7mm;left:4mm;right:4mm;border:1px solid #777;text-align:center;font-size:6.5px;font-weight:bold;font-style:italic;padding:1mm 0;white-space:nowrap}
+    .print-button{margin-top:18px;width:100%;font-size:16px;background:linear-gradient(180deg, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0.25) 100%), #198754;color:white}
+
+    @media print{
+      @page{size:80mm 50mm;margin:0}
+      html,body{width:80mm;margin:0;padding:0;background:white}
+      body{overflow:visible}
+      .app-header,.header-dropdown,h2,.search-box,.print-list,.print-button,.preview-nav{display:none!important}
+      .container{max-width:none;margin:0;padding:0}
+      .preview-wrapper{display:block;margin:0;padding:0;background:white}
+      .preview-area{display:block;margin:0;padding:0;background:white;overflow:visible}
+      #printPage{display:block;margin:0;padding:0}
+      .print-page{width:80mm;height:50mm;margin:0;padding:0;transform:none!important;page-break-after:always;break-after:page;background:white}
+      .print-page:last-child{page-break-after:auto;break-after:auto}
+      .label-print{width:80mm;height:50mm}
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+  window.headerTitle='Print Barcode';
+  </script>
+  <?!= include('header'); ?>
+
+  <div class="container">
+    <h2>Print Barcode Roll</h2>
+
+    <div class="search-box">
+      <div class="label">Roll ID</div>
+      <div class="search-row">
+        <textarea id="rollId" placeholder="Masukkan Roll ID, pisahkan dengan koma, spasi, atau Enter"></textarea>
+        <button onclick="addRoll()">Tambah</button>
+      </div>
+      <div class="message" id="message"></div>
+    </div>
+
+    <div class="print-list">
+      <div class="list-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Daftar Print <span id="listCount">0</span></span>
+        <button class="clear-all-btn" onclick="clearAllRoll()">🗑️ Hapus Semua</button>
+      </div>
+      <div id="rollList"></div>
+    </div>
+
+    <div class="preview-wrapper">
+      <div class="preview-area">
+        <div id="printPage"></div>
+      </div>
+      <div class="preview-nav">
+        <button onclick="prevPage()"><</button>
+        <span id="pageInfo">Page 0 / 0</span>
+        <button onclick="nextPage()">></button>
+      </div>
+    </div>
+
+    <button class="print-button" onclick="printLabels()">🖨️ Print Label</button>
+  </div>
+
+  <script>
+    let printList=[];
+
+    function autoResize(){
+      const input=document.getElementById('rollId');
+      input.style.height='auto';
+      input.style.height=input.scrollHeight+'px';
+    }
+
+    function addRoll(){
+      const input=document.getElementById('rollId');
+      const message=document.getElementById('message');
+      const rollIds=input.value.trim().split(/[\s,]+/).filter(Boolean);
+      message.textContent='';
+
+      if(!rollIds.length){
+        message.textContent='Masukkan Roll ID terlebih dahulu.';
+        return;
+      }
+
+      const duplicate=rollIds.find(function(rollId,index){
+        return rollIds.indexOf(rollId)!==index||printList.some(function(item){
+          return item['Roll ID'].toLowerCase()===rollId.toLowerCase();
+        });
+      });
+
+      if(duplicate){
+        message.textContent='Roll ID "'+duplicate+'" duplikat atau sudah ada di daftar.';
+        return;
+      }
+
+      message.textContent='Mencari '+rollIds.length+' Roll...';
+
+      google.script.run
+        .withSuccessHandler(function(result){
+          if(!result.success){
+            message.textContent=result.message||'Gagal mengambil data Roll.';
+            return;
+          }
+
+          finishAdd(result.results||[]);
+        })
+        .withFailureHandler(function(error){
+          message.textContent='Gagal mengambil data Roll: '+error.message;
+        })
+        .getRollsForPrint(rollIds);
+    }
+
+    function finishAdd(results){
+      const message=document.getElementById('message');
+      const input=document.getElementById('rollId');
+
+      const success=[];
+      const failed=[];
+
+      results.forEach(function(item){
+        if(item.success){
+          success.push(item.data);
+        }else{
+          failed.push(item.rollId+': '+item.message);
+        }
+      });
+
+      success.forEach(function(data){
+        printList.push(data);
+      });
+
+      input.value='';
+      autoResize();
+      currentPage=0;
+
+      renderList();
+      renderLabels();
+
+      if(failed.length){
+        message.textContent='Beberapa Roll gagal diproses: '+failed.join(' | ');
+      }else{
+        message.textContent='';
+      }
+    }
+
+    function removeRoll(index){
+      printList.splice(index,1);
+      renderList();
+      renderLabels();
+    }
+
+    function clearAllRoll(){
+      if(!printList.length)return;
+
+      if(!confirm('Hapus semua Roll dari daftar print?'))return;
+
+      printList=[];
+      currentPage=0;
+
+      renderList();
+      renderLabels();
+    }
+
+    function renderList(){
+      const list=document.getElementById('rollList');
+      const totalPages=Math.ceil(printList.length/10);
+      const start=currentPage*10;
+      const end=Math.min(start+10,printList.length);
+      document.getElementById('listCount').textContent=printList.length;
+      list.innerHTML='';
+
+      const page=document.createElement('div');
+      page.className='roll-list-page';
+
+      for(let i=start;i<end;i++){
+        const item=document.createElement('div');
+        item.className='list-item';
+        item.innerHTML='<span>'+(i+1)+'. '+printList[i]['Roll ID']+'</span><button class="remove-btn" title="Hapus Roll" onclick="removeRoll('+i+')"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg></button>';
+        page.appendChild(item);
+      }
+
+      list.appendChild(page);
+    }
+
+    function createLabel(data,index){
+      const label=document.createElement('div');
+      label.className='label-print';
+
+      label.innerHTML=
+        '<div class="label-main">'+
+          '<div class="qr-area">'+
+            '<div class="qrcode" id="qrcode-'+index+'"></div>'+
+            '<div class="roll-id">'+(data['Roll ID']||'-')+'</div>'+
+          '</div>'+
+          '<div class="info">'+
+            '<div class="info-row"><div class="info-label">Fabric</div><div class="info-separator">:</div><div class="info-value">'+(data['Jenis Kain']||'-')+'</div></div>'+
+            '<div class="info-row"><div class="info-label">Name</div><div class="info-separator">:</div><div class="info-value">'+(data['Nama Produk']||'-')+'</div></div>'+
+            '<div class="info-row"><div class="info-label">Code</div><div class="info-separator">:</div><div class="info-value">'+(data['Kode Desain']?String(data['Kode Desain']).toUpperCase():'-')+'</div></div>'+
+            '<div class="info-row"><div class="info-label">Color</div><div class="info-separator">:</div><div class="info-value">'+(data['Warna']||'-')+'</div></div>'+
+            '<div class="info-row"><div class="info-label">Width</div><div class="info-separator">:</div><div class="info-value">'+(data['Lebar']?data['Lebar']+' CM':'-')+'</div></div>'+
+            '<div class="info-row"><div class="info-label">Weight</div><div class="info-separator">:</div><div class="info-value">'+(data['GSM']?data['GSM']+' GSM':'-')+'</div></div>'+
+            '<div class="info-row"><div class="info-label">Length</div><div class="info-separator">:</div><div class="info-value">'+(data['Length']&&Number(data['Length'])>0?data['Length']+' '+data['Length Unit']:'')+'</div></div>'+
+            '<div class="info-row"><div class="info-label">Date</div><div class="info-separator">:</div><div class="info-value">'+(data['Print Date']||'-')+'</div></div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="warning">TIDAK MENERIMA KLAIM SETELAH KAIN DIPOTONG</div>';
+
+      return label;
+    }
+
+    function fitInfoText(label){
+      const values=label.querySelectorAll('.info-value');
+      values.forEach(function(el){
+        let size=9;
+        el.style.fontSize=size+'px';
+        while(el.scrollWidth>el.clientWidth&&size>5){
+          size-=0.25;
+          el.style.fontSize=size+'px';
+        }
+      });
+    }
+
+    let currentPage=0;
+
+    function renderLabels(){
+      const page=document.getElementById('printPage');
+      page.innerHTML='';
+
+      const totalPages=Math.ceil(printList.length/10);
+
+      if(totalPages===0){
+        currentPage=0;
+        updatePageNav();
+        return;
+      }
+
+      if(currentPage>=totalPages){
+        currentPage=totalPages-1;
+      }
+
+      const pageElement=document.createElement('div');
+      pageElement.className='print-page';
+
+      const start=currentPage*10;
+      const end=Math.min(start+10,printList.length);
+
+      for(let i=start;i<end;i++){
+        const label=createLabel(printList[i],i);
+        pageElement.appendChild(label);
+
+        setTimeout(function(){
+          const qr=document.getElementById('qrcode-'+i);
+
+          if(qr){
+            new QRCode(qr,{
+              text:printList[i]['Roll ID'],
+              width:220,
+              height:220,
+              correctLevel:QRCode.CorrectLevel.M
+            });
+          }
+        },0);
+      }
+
+      // while(pageElement.children.length<10){
+      //   const emptyLabel=document.createElement('div');
+      //   emptyLabel.className='label-print';
+      //   emptyLabel.style.visibility='hidden';
+      //   pageElement.appendChild(emptyLabel);
+      // }
+
+      page.appendChild(pageElement);
+
+      requestAnimationFrame(function(){
+        pageElement.querySelectorAll('.label-print').forEach(function(label){
+          fitInfoText(label);
+        });
+
+        fitPreview();
+
+        requestAnimationFrame(fitPreview);
+      });
+
+      updatePageNav();
+    }
+
+    function updatePageNav(){
+      const totalPages=Math.ceil(printList.length/10);
+      const pageInfo=document.getElementById('pageInfo');
+      const buttons=document.querySelectorAll('.preview-nav button');
+
+      pageInfo.textContent=totalPages?`Page ${currentPage+1} / ${totalPages}`:'Page 0 / 0';
+
+      buttons[0].disabled=currentPage<=0;
+      buttons[1].disabled=currentPage>=totalPages-1;
+    }
+
+    function prevPage(){
+      if(currentPage>0){
+        currentPage--;
+        renderLabels();
+        renderList();
+      }
+    }
+
+    function nextPage(){
+      const totalPages=Math.ceil(printList.length/10);
+
+      if(currentPage<totalPages-1){
+        currentPage++;
+        renderLabels();
+        renderList();
+      }
+    }
+
+    function fitPreview(){
+      const area=document.querySelector('.preview-area');
+      const page=document.querySelector('.print-page');
+      if(!area||!page)return;
+
+      const pageWidth=page.offsetWidth;
+      const pageHeight=page.offsetHeight;
+      const availableWidth=area.clientWidth;
+      const scale=Math.min(1,(availableWidth-4)/pageWidth);
+
+      page.style.transform='scale('+scale+')';
+      page.style.transformOrigin='top center';
+      area.style.height=(pageHeight*scale)+'px';
+    }
+
+    function printLabels(){
+      if(printList.length===0){
+        alert('Belum ada Roll ID yang ditambahkan.');
+        return;
+      }
+
+      const page=document.getElementById('printPage');
+      page.innerHTML='';
+
+      const pages=[];
+
+      printList.forEach(function(data,index){
+        const pageElement=document.createElement('div');
+        pageElement.className='print-page';
+
+        const label=createLabel(data,index);
+        pageElement.appendChild(label);
+
+        page.appendChild(pageElement);
+        pages.push({page:pageElement,data:data,index:index});
+      });
+
+      pages.forEach(function(item){
+        const qr=document.getElementById('qrcode-'+item.index);
+
+        if(qr){
+          new QRCode(qr,{
+            text:item.data['Roll ID'],
+            width:220,
+            height:220,
+            correctLevel:QRCode.CorrectLevel.M
+          });
+        }
+      });
+
+      setTimeout(function(){
+        pages.forEach(function(item){
+          fitInfoText(item.page.querySelector('.label-print'));
+        });
+
+        window.print();
+
+        setTimeout(function(){
+          renderLabels();
+        },500);
+
+      },300);
+    }
+
+    document.getElementById('rollId').addEventListener('input',autoResize);
+
+    google.script.url.getLocation(function(location){
+      const rollIds=location.parameter.rollIds;
+
+      if(rollIds){
+        document.getElementById('rollId').value=rollIds.replace(/,/g,'\n');
+        autoResize();
+        addRoll();
+      }else{
+        renderLabels();
+      }
+    });
+
+    window.addEventListener('resize',fitPreview);
+  </script>
+</body>
+</html>
