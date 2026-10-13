@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Gudang</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif !important;background:#f5f5f5;color:#222}
+    
+    .container{max-width:900px;margin:30px auto;padding:20px}
+    .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .section-title{font-size:17px;font-weight:bold;margin-bottom:6px}
+    .section-note{font-size:13px;color:#888;margin-bottom:18px}
+
+    .total-card{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#198754;color:#fff}
+    .total-label{font-size:13px;opacity:.85;font-weight:bold}
+    .total-value{font-size:34px;font-weight:bold;margin-top:5px}
+    .total-unit{font-size:14px;font-weight:normal}
+    .total-loading{font-size:13px;font-weight:normal;opacity:.85}
+
+    .condition-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+    .condition-card{border:1px solid #dee2e6;border-radius:10px;padding:15px}
+    .condition-card{cursor:pointer;transition:.15s}
+    .condition-card:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.12)}
+    .detail-card{display:none}
+    .detail-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}
+    .detail-title{font-size:17px;font-weight:bold}
+    .detail-close{width:auto;margin:0;padding:7px 12px;background:#e9ecef;color:#333;font-size:13px}
+    .detail-list{border:1px solid #dee2e6;border-radius:10px;overflow:hidden}
+    .detail-row{display:grid;grid-template-columns:1.2fr 1.5fr 1fr 1fr;gap:10px;padding:12px 14px;border-bottom:1px solid #eee;font-size:13px}
+    .detail-row:last-child{border-bottom:0}
+    .detail-head{font-size:11px;font-weight:bold;color:#777;background:#f8f9fa}
+    .detail-empty{text-align:center;color:#888;padding:20px;font-size:13px}
+    @media(max-width:600px){
+      .detail-row{grid-template-columns:1fr 1fr;gap:8px}
+      .detail-head{display:none}
+    }
+    .condition-label{font-size:13px;font-weight:bold;margin-bottom:7px}
+    .condition-value{font-size:25px;font-weight:bold}
+    .condition-unit{font-size:13px;font-weight:normal}
+
+    .not-opname{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#AD2020;color:#fff}
+    .available{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#198754;color:#fff}
+    .outbound{background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.25) 100%),#6c757d;color:#fff}
+
+    .activity-list{border:1px solid #dee2e6;border-radius:10px;overflow:hidden}
+    .activity-item{display:flex;align-items:center;justify-content:space-between;padding:14px 15px;border-bottom:1px solid #eee}
+    .activity-item:last-child{border-bottom:0}
+    .activity-name{font-size:14px}
+    .activity-value{font-size:13px;font-weight:normal}
+    .activity-badge{display:inline-flex;align-items:center;justify-content:center;min-width:28px;padding:6px 10px;border-radius:7px;background:#e8def8;color:#6f42c1;font-size:12px}
+    .activity-icon{width:30px}
+    .activity-left{display:flex;align-items:center;gap:8px}
+
+    .loading{text-align:center;color:#888;padding:15px}
+
+    @media(max-width:600px){
+      .container{margin:10px auto;padding:12px}
+      .condition-grid{grid-template-columns:1fr 1fr}
+      .total-value{font-size:30px}
+    }
+  </style>
+</head>
+<body>
+
+<script>
+window.headerTitle='Dashboard Gudang';
+</script>
+<?!= include('header'); ?>
+
+<div class="container">
+
+  <div class="card">
+    <div class="section-title">📊 RINGKASAN GUDANG</div>
+    <div class="section-note">Kondisi roll berdasarkan data gudang saat ini.</div>
+
+    <div class="card total-card" style="margin:0">
+      <div class="total-label">Total Roll</div>
+      <div class="total-value" id="totalRoll"><span class="total-loading">Memuat data...</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📦 KONDISI STOK</div>
+    <div class="section-note">Status roll yang tercatat di gudang.</div>
+
+    <div class="condition-grid">
+      <div class="condition-card available" onclick="openDashboardDetail('available')">
+        <div class="condition-label">Stok Tersedia</div>
+        <div class="condition-value" id="stockAvailable"><span class="total-loading">Memuat data...</span></div>
+        
+      </div>
+
+      <div class="condition-card not-opname" onclick="openDashboardDetail('notOpname')">
+        <div class="condition-label">Belum Opname</div>
+        <div class="condition-value" id="notOpname"><span class="total-loading">Memuat data...</span></div>
+        <!-- <div class="condition-unit">Roll</div> -->
+      </div>
+    </div>
+
+    <div class="condition-card outbound" onclick="openDashboardDetail('outbound')" style="margin-top:12px">
+      <div class="condition-label">Barang Keluar Hari Ini</div>
+      <div class="condition-value" id="outbound"><span class="total-loading">Memuat data...</span></div>
+      <!-- <div class="condition-unit">Roll</div> -->
+    </div>
+  </div>
+
+  <div class="card detail-card" id="detailCard">
+    <div class="detail-header">
+      <div>
+        <div class="detail-title" id="detailTitle">Detail Roll</div>
+        <div class="section-note" style="margin:4px 0 0" id="detailNote"></div>
+      </div>
+      <button class="detail-close" onclick="closeRollDetail()">Tutup</button>
+    </div>
+    <div class="detail-list" id="detailList"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">🔄 AKTIVITAS GUDANG HARI INI</div>
+    <div class="section-note">Jumlah transaksi yang tercatat pada sistem.</div>
+
+    <div class="activity-list">
+      <div class="activity-item">
+        <div class="activity-left">
+          <div class="activity-icon">📷</div>
+          <div class="activity-name">Stock Opname</div>
+        </div>
+        <div class="activity-value"><span class="activity-badge" id="activityOpname">Memuat data...</span></div>
+      </div>
+
+      <div class="activity-item">
+        <div class="activity-left">
+          <div class="activity-icon">🔄</div>
+          <div class="activity-name">Pergerakan Barang</div>
+        </div>
+        <div class="activity-value"><span class="activity-badge" id="activityMovement">Memuat data...</span></div>
+      </div>
+
+      <div class="activity-item">
+        <div class="activity-left">
+          <div class="activity-icon">✂️</div>
+          <div class="activity-name">Potong Sampel</div>
+        </div>
+        <div class="activity-value"><span class="activity-badge" id="activitySample">Memuat data...</span></div>
+      </div>
+
+      <div class="activity-item">
+        <div class="activity-left">
+          <div class="activity-icon">📦</div>
+          <div class="activity-name">Barang Keluar</div>
+        </div>
+        <div class="activity-value"><span class="activity-badge" id="activityOutbound">Memuat data...</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function loadDashboard(){
+  google.script.run.withSuccessHandler(function(response){
+    if(!response||!response.success)return;
+    document.getElementById('totalRoll').innerHTML=response.totalRoll+' <span class="total-unit">ROLL</span>';
+    document.getElementById('stockAvailable').innerHTML=response.stockAvailable+' <span class="condition-unit">ROLL</span>';
+    document.getElementById('notOpname').innerHTML=response.notOpname+' <span class="condition-unit">ROLL</span>';
+    document.getElementById('outbound').innerHTML=response.outbound+' <span class="condition-unit">ROLL</span>';
+  }).getDashboardData();
+
+  google.script.run.withSuccessHandler(function(response){
+    if(!response||!response.success)return;
+    const data=response.data;
+    document.getElementById('activityOpname').textContent=data.opname+' Aktivitas';
+    document.getElementById('activityMovement').textContent=data.movement+' Aktivitas';
+    document.getElementById('activitySample').textContent=data.sampleCut+' Aktivitas';
+    document.getElementById('activityOutbound').textContent=data.outbound+' Aktivitas';
+  }).getDashboardActivity();
+}
+loadDashboard();
+
+function showRollDetail(type){
+  const card=document.getElementById('detailCard');
+  const title=document.getElementById('detailTitle');
+  const note=document.getElementById('detailNote');
+  const list=document.getElementById('detailList');
+
+  card.style.display='block';
+  list.innerHTML='<div class="detail-empty">Memuat data...</div>';
+
+  if(type==='available'){
+    title.textContent='Stok Tersedia';
+    note.textContent='Daftar roll yang memiliki stok dan sudah dilakukan opname.';
+  }else if(type==='notOpname'){
+    title.textContent='Belum Opname';
+    note.textContent='Daftar roll yang belum memiliki data opname.';
+  }else if(type==='outbound'){
+    title.textContent='Barang Keluar Hari Ini';
+    note.textContent='Daftar roll yang keluar dari gudang hari ini.';
+  }
+
+  google.script.run.withSuccessHandler(function(response){
+    if(!response||!response.success){
+      list.innerHTML='<div class="detail-empty">Gagal mengambil data.</div>';
+      return;
+    }
+
+    if(!response.data.length){
+      list.innerHTML='<div class="detail-empty">Tidak ada data roll.</div>';
+      return;
+    }
+
+    let html='<div class="detail-row detail-head"><div>ROLL ID</div><div>NAMA PRODUK</div><div>WARNA</div><div>LOKASI</div></div>';
+
+    response.data.forEach(function(row){
+      html+='<div class="detail-row">';
+      html+='<div>'+escapeHtml(row.rollId)+'</div>';
+      html+='<div>'+escapeHtml(row.product)+'</div>';
+      html+='<div>'+escapeHtml(row.color)+'</div>';
+      html+='<div>'+escapeHtml(row.location)+'</div>';
+      html+='</div>';
+    });
+
+    list.innerHTML=html;
+  }).getDashboardRollDetail(type);
+}
+
+function closeRollDetail(){
+  document.getElementById('detailCard').style.display='none';
+}
+
+function escapeHtml(value){
+  return String(value||'').replace(/[&<>"']/g,function(char){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char];
+  });
+}
+
+
+function openDashboardDetail(type){
+  google.script.run.withSuccessHandler(function(url){
+    window.top.location.href=url+'?page=dashboard_detail&type='+type;
+  }).getWebAppUrl();
+}
+</script>
+
+</body>
+</html>
